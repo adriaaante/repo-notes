@@ -164,7 +164,7 @@ REPO_NOTES_EOF
 # без скилла futureflow (repo-notes выше уже установлен).
 # ---------------------------------------------------------------------
 ff_tmp=$(mktemp -d)
-if git clone -q --depth 1 https://github.com/adriaaante/repo-notes "$ff_tmp" 2>/dev/null \
+if git clone -q --depth 1 --branch main https://github.com/adriaaante/repo-notes "$ff_tmp" 2>/dev/null \
    && [ -d "$ff_tmp/.claude/skills/futureflow" ]; then
   rm -rf "$HOME/.claude/skills/futureflow"
   cp -r "$ff_tmp/.claude/skills/futureflow" "$HOME/.claude/skills/futureflow"

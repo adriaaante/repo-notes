@@ -1,0 +1,80 @@
+// Общая библиотека документов FutureFlow (docx-js, Times New Roman).
+// Исполнитель — постоянный; Заказчик — из client.json в текущей папке (_materials/docs/ проекта).
+const fs = require('fs');
+const path = require('path');
+const { Document, Packer, Paragraph, TextRun, ImageRun, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle, ShadingType, VerticalAlign } = require('docx');
+const CLIENT = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'client.json'), 'utf8'));
+const F = 'Times New Roman';
+const NO = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };
+const TB = { style: BorderStyle.SINGLE, size: 4, color: '000000' };
+
+// ⚠ символ \n сам по себе в docx строку НЕ переносит (текст склеивается:
+// «…ОГРНИП 325774600319981Получатель:») — нужен отдельный TextRun с break. Этим занимается tt().
+const tt = (text, o = {}) => String(text).split('\n').map((s, i) =>
+  new TextRun({ text: s, font: F, size: o.size || 20, bold: !!o.bold, break: i ? 1 : 0 }));
+const t = (text, o = {}) => new TextRun({ text, font: F, size: o.size || 20, bold: !!o.bold });
+const p = (text, o = {}) => new Paragraph({
+  alignment: o.align || AlignmentType.LEFT,
+  spacing: { before: o.before || 0, after: o.after === undefined ? 80 : o.after, line: 240 },
+  children: tt(text, o),
+});
+const h = (text, size = 28) => new Paragraph({
+  alignment: AlignmentType.CENTER, spacing: { after: 60, line: 240 },
+  children: [new TextRun({ text, font: F, size, bold: true })],
+});
+const cell = (text, w, o = {}) => new TableCell({
+  width: { size: w, type: WidthType.DXA },
+  margins: { top: 40, bottom: 40, left: 80, right: 80 },
+  verticalAlign: VerticalAlign.CENTER,
+  shading: o.shade ? { type: ShadingType.CLEAR, fill: o.shade, color: 'auto' } : undefined,
+  borders: o.noBorder ? { top: NO, bottom: NO, left: NO, right: NO } : { top: TB, bottom: TB, left: TB, right: TB },
+  children: [new Paragraph({ alignment: o.align || AlignmentType.LEFT, spacing: { after: 0, line: 240 }, children: tt(text, o) })],
+});
+
+// Исполнитель — постоянные реквизиты
+const ISP_LINE = 'ИП Зайдель Адриан Патрик, ИНН 772590578053, ОГРНИП 325774600319981, 115407, г. Москва, ул. Затонная, д. 5, корп. 4, кв. 27, тел. +7 925 904-01-11.';
+const ISP_FULL = 'Индивидуальный предприниматель Зайдель Адриан Патрик (ОГРНИП 325774600319981, ИНН 772590578053), именуемый в дальнейшем «Исполнитель», с одной стороны';
+const ZAK_FULL = `${CLIENT.full} в лице ${CLIENT.director_title_genitive} ${CLIENT.director_genitive}, действующего на основании ${CLIENT.basis_doc}, именуемое в дальнейшем «Заказчик», с другой стороны`;
+const ISP = ['ИСПОЛНИТЕЛЬ:', 'ИП Зайдель Адриан Патрик', 'ИНН 772590578053', 'ОГРНИП 325774600319981',
+  '115407, г. Москва, ул. Затонная,', 'д. 5, корп. 4, кв. 27', 'Р/с 40802810800008299634', 'АО «ТБанк», БИК 044525974', 'тел. +7 925 904-01-11'];
+const ZAK = ['ЗАКАЗЧИК:', CLIENT.short, CLIENT.inn_kpp, ...CLIENT.address_lines, CLIENT.director_title, CLIENT.director];
+while (ZAK.length < ISP.length) ZAK.push('');
+
+// ⚠ ИП Зайдель работает БЕЗ печати: «М.П.» только у Заказчика.
+function signBlock() {
+  const col = (lines, sign, seal) => new TableCell({
+    width: { size: 5310, type: WidthType.DXA }, borders: { top: NO, bottom: NO, left: NO, right: NO },
+    children: [...lines.map((x, i) => p(x, { bold: i === 0 })), p('', { after: 300 }), p('_______________ ' + sign), ...(seal ? [p('М.П.')] : [])],
+  });
+  return new Table({
+    columnWidths: [5310, 5310], width: { size: 10620, type: WidthType.DXA },
+    borders: { top: NO, bottom: NO, left: NO, right: NO, insideHorizontal: NO, insideVertical: NO },
+    rows: [new TableRow({ children: [col(ISP, '/ Зайдель А. П. /', false), col(ZAK, `/ ${CLIENT.director_short} /`, true)] })],
+  });
+}
+// Таблица услуг: по строке на позицию (акт закрывает несколько счетов — по строке на счёт)
+function servicesTable(items, head = 'Наименование работ, услуг') {
+  const W = [520, 5600, 900, 800, 1400, 1400];
+  const hc = (x, i) => cell(x, W[i], { bold: true, align: AlignmentType.CENTER, shade: 'F2F2F2' });
+  return new Table({ columnWidths: W, width: { size: 10620, type: WidthType.DXA }, rows: [
+    new TableRow({ tableHeader: true, children: ['№', head, 'Кол-во', 'Ед.', 'Цена', 'Сумма'].map(hc) }),
+    ...items.map((it, i) => new TableRow({ children: [
+      cell(String(i + 1), W[0], { align: AlignmentType.CENTER }), cell(it.name, W[1]),
+      cell('1', W[2], { align: AlignmentType.CENTER }), cell('усл.', W[3], { align: AlignmentType.CENTER }),
+      cell(it.price, W[4], { align: AlignmentType.RIGHT }), cell(it.price, W[5], { align: AlignmentType.RIGHT }),
+    ]})),
+  ]});
+}
+// Шапка счёта с банковскими реквизитами Исполнителя
+function bankTable() {
+  const BW = [5400, 2200, 3020];
+  return new Table({ columnWidths: BW, width: { size: 10620, type: WidthType.DXA }, rows: [
+    new TableRow({ children: [cell('Банк получателя: АО «ТБанк»', BW[0]), cell('БИК', BW[1], { align: AlignmentType.CENTER }), cell('044525974', BW[2])] }),
+    new TableRow({ children: [cell('', BW[0]), cell('Сч. №', BW[1], { align: AlignmentType.CENTER }), cell('30101810145250000974', BW[2])] }),
+    new TableRow({ children: [cell('ИНН 772590578053   ОГРНИП 325774600319981\nПолучатель: ИП Зайдель Адриан Патрик', BW[0]), cell('Сч. №', BW[1], { align: AlignmentType.CENTER }), cell('40802810800008299634', BW[2])] }),
+  ]});
+}
+const PAGE = { properties: { page: { margin: { top: 850, right: 850, bottom: 850, left: 1130 } } } };
+const save = (name, children) => Packer.toBuffer(new Document({ sections: [{ ...PAGE, children }] }))
+  .then(b => { fs.writeFileSync(name, b); console.log('ok', name); });
+module.exports = { CLIENT, F, t, tt, p, h, cell, signBlock, servicesTable, bankTable, save, ISP_LINE, ISP_FULL, ZAK_FULL, Paragraph, TextRun, ImageRun, AlignmentType };

@@ -66,6 +66,12 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:now
 .price .row:last-child{border-bottom:0}
 .price .row span small{display:block;color:#B5B0A6;font-size:9.5px;font-weight:500}
 .price .row b{white-space:nowrap;font-variant-numeric:tabular-nums}
+.price .promise{color:#CFCAC0;font-size:12.5px;margin:10px 0 12px;max-width:70ch}
+.price .incl{display:grid;grid-template-columns:1fr 1fr;gap:0 18px}
+.price .incl div{padding:8px 0 8px 18px;border-top:1px solid #3A3B3C;position:relative}
+.price .incl div::before{content:"✓";position:absolute;left:0;top:8px;color:#5FC3C8;font-weight:800}
+.price .incl b{display:block;font-weight:700}
+.price .incl small{display:block;color:#B5B0A6;font-size:10.5px;font-weight:500}
 .month{background:var(--panel);border-radius:8px;padding:9px 11px}
 .month .m{font-size:8.5px;font-weight:800;letter-spacing:.08em;color:var(--accent-ink)}
 .month h3{margin:3px 0 5px}
@@ -147,8 +153,12 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:now
 <section class="page">
   <h2><span class="n">2</span>Предложение</h2>
   <div class="price">
-    <div class="big">50 000 ₽<small>в месяц</small></div>
-    <div style="margin-top:10px"><div class="row"><span>Направление<small>что входит</small></span><b>18 000 ₽</b></div></div>
+    <div class="big">55 000 ₽<small>в месяц · одна цена за всё, без доплат</small></div>
+    <p class="promise">Что клиент получает целиком: берём на себя всё и каждый месяц приводим новых клиентов.</p>
+    <div class="incl">
+      <div><b>Что входит</b><small>пояснение простыми словами — без суммы по строке</small></div>
+      <div><b>Любые текущие задачи</b><small>правки, акции, вопросы — решаем в рамках месяца</small></div>
+    </div>
   </div>
   <div class="sig">
     <div><svg class="fflogo md"><use href="#fflogo"/></svg><div class="small" style="margin-top:4px">Агентство FutureFlow · futureflow.ru</div></div>

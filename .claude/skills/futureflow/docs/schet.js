@@ -4,7 +4,7 @@ const fs = require('fs');
 const L = require('./lib.js');
 const { CLIENT, p, t, AlignmentType, Paragraph, ImageRun } = L;
 const CFG = {
-  num: CLIENT.prefix + '0000',                 // следующий свободный номер (сквозной по всем клиентам)
+  num: CLIENT.prefix + '001',                  // своя серия клиента: следующий номер — из finance-log проекта
   dateText: '«__» ________ 2026 г.',
   basis: CLIENT.contract,                      // + «в редакции дополнительного соглашения № N от …», если есть
   items: [{ name: 'Услуги по продвижению по договору за ________ 2026 г.', price: '120 000,00' }], // одна короткая строка

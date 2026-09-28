@@ -19,12 +19,29 @@ ap.add_argument('--legacy-ok', action='store_true', help='разрешить с�
 a = ap.parse_args()
 
 prefix = a.prefix
-if not prefix and os.path.exists('client.json'):
-    prefix = json.load(open('client.json', encoding='utf-8')).get('prefix')
+client = {}
+if os.path.exists('client.json'):
+    client = json.load(open('client.json', encoding='utf-8'))
+    prefix = prefix or client.get('prefix')
 errors = []
 if not prefix or not re.fullmatch(r'[А-ЯЁA-Z]{2}-', prefix):
     sys.exit(f'✖ Префикс «{prefix}» не задан или не из двух заглавных букв с дефисом (например «КН-»). '
              'Задать в client.json → "prefix" или --prefix.')
+# Реестр префиксов клиентов: рядом со скриптом в скилле или в ~/.claude/skills/futureflow/docs/.
+reg_path = next((p for p in [os.path.join(os.path.dirname(os.path.abspath(__file__)), 'prefixes.json'),
+                             os.path.expanduser('~/.claude/skills/futureflow/docs/prefixes.json')] if os.path.exists(p)), None)
+if reg_path:
+    reg = {k: v for k, v in json.load(open(reg_path, encoding='utf-8')).items() if not k.startswith('_')}
+    owner = reg.get(prefix)
+    name = client.get('short', '')
+    if owner is None:
+        sys.exit(f'✖ Префикса «{prefix}» нет в реестре {reg_path}. Сначала выбрать две буквы из названия клиента, '
+                 f'проверить, что они не заняты ({", ".join(reg)}), добавить строку в prefixes.json скилла.')
+    if name and owner['client'] != name:
+        sys.exit(f'✖ Префикс «{prefix}» в реестре принадлежит {owner["client"]}, а client.json — {name}. '
+                 'Две буквы должны быть уникальны у каждого клиента.')
+else:
+    print('⚠ Реестр префиксов prefixes.json не найден — уникальность двух букв между клиентами не проверена.')
 if not os.path.exists(a.finance):
     sys.exit(f'✖ Нет реестра {a.finance}. Завести finance-log из шаблона скилла — номер без реестра не выдаётся.')
 

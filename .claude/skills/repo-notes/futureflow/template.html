@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Клиент — тема документа. FutureFlow</title>
+<!-- Шаблон клиентского документа FutureFlow. Сборка: python3 ~/.claude/skills/repo-notes/futureflow/ff_pdf.py этот.html "Отчёт FutureFlow — ….pdf" -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=block">
+<style>
+@page{size:A4;margin:0}
+:root{--ink:#1C1C1B;--muted:#66625C;--line:#DCD8D0;--bg:#FFFFFF;--panel:#F3F5F5;--panel2:#E6ECEC;
+  --accent:#0B7A80;--accent-ink:#085F64 /* ← акцент КЛИЕНТА (его брендовый цвет) */;--blue:#3c8ad8;--blue-ink:#2b6fb3;--ok:#2E8B4A;--warn:#B8860B;--bad:#C0392B}
+*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:"Manrope",system-ui,"Segoe UI",Roboto,sans-serif;font-size:12.6px;line-height:1.5}
+.page{width:210mm;height:297mm;padding:13mm 15mm 14mm;position:relative;overflow:hidden;break-after:page;page-break-after:always;background:var(--bg)}
+.page.dense{font-size:11.6px}
+.page.dense .lead{font-size:13px}
+.page:last-child{break-after:auto;page-break-after:auto}
+.foot{position:absolute;left:15mm;right:15mm;bottom:7mm;display:flex;justify-content:space-between;font-size:8.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:4px}
+.foot b{color:var(--blue-ink);font-weight:700}
+.eyebrow{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-ink);font-weight:800;margin:0 0 5px}
+h1{font-size:30px;line-height:1.1;font-weight:800;letter-spacing:-.015em;margin:0 0 10px;text-wrap:balance}
+h2{font-size:22px;font-weight:800;letter-spacing:-.01em;margin:0 0 8px;text-wrap:balance}
+h2 .n{color:var(--accent);margin-right:6px}
+h3{font-size:14px;font-weight:800;margin:14px 0 6px}
+p{margin:0 0 7px}
+ul,ol{margin:0 0 8px;padding-left:16px}li{margin:0 0 3px}
+.lead{font-size:14px;color:var(--muted);margin:0 0 14px;max-width:74ch}
+.small{font-size:9.5px;color:var(--muted)}
+b{font-weight:800}
+code{font-family:ui-monospace,"DejaVu Sans Mono",monospace;font-size:10.5px;background:var(--panel);padding:0 3px;border-radius:3px}
+table{border-collapse:collapse;width:100%;font-size:11.4px;margin:6px 0 14px}
+th,td{text-align:left;vertical-align:top;padding:7px 8px;border-bottom:1px solid var(--line)}
+th{font-size:8.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:800;border-bottom:1.5px solid var(--ink)}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0 14px}
+.kpi{background:var(--panel);border-radius:8px;padding:9px 11px}
+.kpi .v{font-size:21px;font-weight:800;letter-spacing:-.02em;line-height:1.1;font-variant-numeric:tabular-nums}
+.kpi .l{font-size:9.5px;color:var(--muted);margin-top:3px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.grid4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px}
+.box{background:var(--panel);border-radius:8px;padding:11px 13px;margin:0 0 10px}
+.box h3{margin-top:0}
+.box ul{margin-bottom:0}
+.call{border-left:3px solid var(--accent);background:var(--panel);padding:8px 11px;border-radius:0 8px 8px 0;margin:8px 0 10px}
+.call.ok{border-color:var(--ok)}.call.warn{border-color:var(--warn)}.call.bad{border-color:var(--bad)}.call.blue{border-color:var(--blue)}
+.tag{display:inline-block;font-size:8.5px;font-weight:800;padding:1px 7px;border-radius:999px;background:var(--panel2);white-space:nowrap;letter-spacing:.03em}
+.tag.bad{background:#F6DBD6;color:var(--bad)}.tag.warn{background:#F3E7C2;color:#7A5A06}.tag.ok{background:#D8EEDD;color:#1F6B37}.tag.blue{background:#DCE9F7;color:var(--blue-ink)}
+.cause{display:grid;grid-template-columns:34mm 1fr;gap:10px;padding:6px 0;border-bottom:1px solid var(--line)}
+.cause .v{font-size:20px;font-weight:800;color:var(--accent);line-height:1.05;letter-spacing:-.02em}
+.cause .v small{display:block;font-size:9px;font-weight:600;color:var(--muted);letter-spacing:0;margin-top:3px}
+.cause h3{margin:0 0 3px}
+.cause p{margin:0}
+.chart{background:var(--panel);border-radius:8px;padding:10px 12px 8px;margin-top:10px}
+.bars{display:grid;grid-template-columns:repeat(20,1fr);grid-template-rows:1fr;gap:4px;align-items:end;height:26mm;border-bottom:1px solid var(--muted);margin-top:14px}
+.bars .b{background:#9DC7C9;border-radius:2px 2px 0 0;position:relative;min-height:1px}
+.bars .b.hi{background:var(--accent)}
+.bars .b.zero{background:var(--bad)}
+.bars .b span{position:absolute;top:-13px;left:0;right:0;text-align:center;font-size:8.5px;font-weight:700;color:var(--muted)}
+.bars .b.zero span{color:var(--bad)}
+.xl{display:grid;grid-template-columns:repeat(20,1fr);gap:4px;font-size:8px;color:var(--muted);text-align:center;margin-top:3px;line-height:1.2}
+.price{background:var(--ink);color:#fff;border-radius:10px;padding:14px 16px;margin:6px 0 12px}
+.price .big{font-size:34px;font-weight:800;letter-spacing:-.02em;line-height:1}
+.price .big small{font-size:12px;font-weight:600;color:#CFCAC0;margin-left:6px;letter-spacing:0}
+.price .row{display:grid;grid-template-columns:1fr auto;gap:12px;padding:7px 0;border-bottom:1px solid #3A3B3C}
+.price .row:last-child{border-bottom:0}
+.price .row span small{display:block;color:#B5B0A6;font-size:9.5px;font-weight:500}
+.price .row b{white-space:nowrap;font-variant-numeric:tabular-nums}
+.month{background:var(--panel);border-radius:8px;padding:9px 11px}
+.month .m{font-size:8.5px;font-weight:800;letter-spacing:.08em;color:var(--accent-ink)}
+.month h3{margin:3px 0 5px}
+.month ul{font-size:11.5px;margin:0}
+.cover{background:var(--ink);color:#fff;padding:18mm 16mm 14mm}
+.cover .eyebrow{color:#5FC3C8}
+.cover h1{font-size:38px;color:#fff;max-width:20ch}
+.cover .lead{color:#CFCAC0;font-size:14px;max-width:62ch}
+.cover .kpi{background:#2A2B2C;color:#fff}.cover .kpi .l{color:#B5B0A6}
+.cover .foot{border-top-color:#3A3B3C;color:#9B968C}
+.brand{display:flex;align-items:center;gap:12px;margin-bottom:20mm}
+.brand .tile{background:#fff;border-radius:10px;padding:5px 7px;display:flex}
+.brand img{height:40px;display:block}
+.brand .sep{width:1px;height:26px;background:#4A4B4C}
+.brand span{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#B5B0A6;font-weight:700}
+.toc{columns:2;column-gap:20px;font-size:11px}
+.toc div{break-inside:avoid;padding:4px 0;border-bottom:1px solid #3A3B3C;display:flex;gap:8px}
+.toc .n{color:#5FC3C8;font-weight:800;min-width:18px}
+.fflogo{display:block;color:var(--blue)}
+.fflogo.lg{width:190px;height:54px;color:#fff}
+.fflogo.md{width:150px;height:43px}
+.coverff{position:absolute;left:16mm;right:16mm;bottom:22mm;padding-top:12px;border-top:1px solid #3A3B3C;display:flex;align-items:center;gap:18px}
+.coverff .txt{font-size:10px;color:#B5B0A6;line-height:1.5}
+.coverff .txt b{color:#fff;font-weight:700;display:block;font-size:11.5px;margin-bottom:2px}
+.sig{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;margin-top:12px;padding-top:10px;border-top:1.5px solid var(--ink)}
+</style>
+</head>
+<body>
+<!--FFLOGO-->
+
+<!-- ═══════════ ОБЛОЖКА (тёмная) ═══════════ -->
+<section class="page cover">
+  <div class="brand">
+    <div class="tile"><img src="assets/client-logo.png" alt="Клиент"></div>
+    <div class="sep"></div>
+    <span>чем занимается клиент · город</span>
+  </div>
+  <p class="eyebrow">Клиент · тип документа · месяц год</p>
+  <h1>Заголовок-тезис: что случилось и что делаем</h1>
+  <p class="lead">Два-три предложения: что разобрали, откуда данные, что внутри.</p>
+  <div class="kpis">
+    <div class="kpi"><div class="v">5,0 ★</div><div class="l">ключевая цифра 1</div></div>
+    <div class="kpi"><div class="v">−30 %</div><div class="l">ключевая цифра 2</div></div>
+    <div class="kpi"><div class="v">30.09</div><div class="l">ключевая цифра 3</div></div>
+    <div class="kpi"><div class="v">40+</div><div class="l">ключевая цифра 4</div></div>
+  </div>
+  <h2 style="color:#fff;margin-top:10mm">Содержание</h2>
+  <div class="toc">
+    <div><span class="n">1</span><span>Итоги</span></div>
+    <div><span class="n">2</span><span>Раздел</span></div>
+  </div>
+  <div class="coverff">
+    <svg class="fflogo lg"><use href="#fflogo"/></svg>
+    <div class="txt"><b>Подготовлено агентством FutureFlow</b>Продвижение, сайты и реклама для бизнеса · futureflow.ru</div>
+  </div>
+  <div class="foot"><span>Откуда данные и на какую дату</span><span>futureflow.ru</span></div>
+</section>
+
+<!-- ═══════════ ЛИСТ СОДЕРЖАНИЯ (каждый .page = ровно один А4) ═══════════ -->
+<section class="page">
+  <p class="eyebrow">Раздел 1</p>
+  <h2><span class="n">1</span>Заголовок раздела — вывод, а не тема</h2>
+  <p class="lead">Лид: что на этом листе и почему это важно.</p>
+  <table>
+    <tr><th>Что видим</th><th>Статус</th><th>Что делаем</th></tr>
+    <tr><td>Факт с цифрой</td><td><span class="tag bad">Критично</span></td><td>Действие</td></tr>
+    <tr><td>Факт</td><td><span class="tag warn">Важно</span></td><td>Действие</td></tr>
+    <tr><td>Факт</td><td><span class="tag ok">Хорошо</span></td><td>Действие</td></tr>
+    <tr><td>Факт</td><td><span class="tag blue">Проверим</span></td><td>Действие</td></tr>
+  </table>
+  <div class="grid2">
+    <div class="box"><h3>Карточка</h3><ul><li>Пункт</li></ul></div>
+    <div class="call ok"><b>Вывод.</b> Выноска: ok / warn / bad / blue.</div>
+  </div>
+  <div class="foot"><span>Клиент · тема · <b>FutureFlow</b></span><span>стр. 2</span></div>
+</section>
+
+<!-- ═══════════ ЦЕНА / ПОДПИСЬ ═══════════ -->
+<section class="page">
+  <h2><span class="n">2</span>Предложение</h2>
+  <div class="price">
+    <div class="big">50 000 ₽<small>в месяц</small></div>
+    <div style="margin-top:10px"><div class="row"><span>Направление<small>что входит</small></span><b>18 000 ₽</b></div></div>
+  </div>
+  <div class="sig">
+    <div><svg class="fflogo md"><use href="#fflogo"/></svg><div class="small" style="margin-top:4px">Агентство FutureFlow · futureflow.ru</div></div>
+    <div class="small" style="text-align:right">Дата</div>
+  </div>
+  <div class="foot"><span>Клиент · тема · <b>FutureFlow</b></span><span>стр. 3</span></div>
+</section>
+</body>
+</html>

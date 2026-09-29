@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
-"""Следующий номер счёта — ТОЛЬКО из finance-log ЭТОГО проекта. Запускать перед каждым счётом.
+"""Следующий номер ДОКУМЕНТА проекта — ТОЛЬКО из finance-log ЭТОГО проекта. Запускать перед каждым
+договором, счётом, актом и допсоглашением.
 
 python3 next-number.py                  # из _materials/docs/: реестр ../finance-log.md, префикс из client.json
 python3 next-number.py --prefix КН- --finance ../finance-log.md
 
 Правило (решение Adrian 28.09.2026): у каждого клиента свой префикс из двух букв и свой счётчик с 001,
-без привязки к другим проектам. Номера из реестров других клиентов НЕ смотреть и НЕ продолжать.
-Скрипт останавливается (код 1), если в таблице «Счета» есть номер без префикса проекта, с чужим
+без привязки к другим проектам. Счётчик ОДИН на все виды документов проекта и идёт по хронологии
+(решение Adrian 29.09.2026): договор КН-001, первый счёт КН-002, акт КН-003, следующий счёт КН-004… Номера из реестров других клиентов НЕ смотреть и НЕ продолжать.
+Скрипт останавливается (код 1), если в таблицах документов есть номер без префикса проекта, с чужим
 префиксом или повтор, если префикс не из двух букв, или если файл с этим номером уже лежит в docs/.
 Исторические серии без префикса (Сферикс 1544–1549) — флаг --legacy-ok.
 """
@@ -46,42 +48,48 @@ if not os.path.exists(a.finance):
     sys.exit(f'✖ Нет реестра {a.finance}. Завести finance-log из шаблона скилла — номер без реестра не выдаётся.')
 
 text = open(a.finance, encoding='utf-8').read()
-m = re.search(r'^##\s+Счета\s*$(.*?)(?=^##\s)', text, re.S | re.M)
-if not m:
-    sys.exit('✖ В finance-log нет раздела «## Счета» с таблицей.')
-rows = [r for r in m.group(1).splitlines() if r.startswith('|') and not re.match(r'^\|\s*(№|-)', r)]
-nums, width, cells = [], 3, []
-for r in rows:
-    cell = r.split('|')[1].strip()
-    if cell in ('', '—', '-'):
-        continue
-    mm = re.fullmatch(r'([А-ЯЁA-Z]{2}-)?(\d+)', cell)
-    if not mm:
-        errors.append(f'непонятный номер в таблице: «{cell}»'); continue
-    p, n = mm.group(1), mm.group(2)
-    if p is None:
-        if not a.legacy_ok:
-            errors.append(f'номер без префикса: «{cell}» (для старой серии Сферикса — --legacy-ok)')
-    elif p != prefix:
-        errors.append(f'чужой префикс: «{cell}» при префиксе проекта «{prefix}»')
-    if p == prefix:
+# Номера берутся из ВСЕХ таблиц реестра документов: договоры, счета, акты, допсоглашения —
+# у проекта ОДИН сквозной счётчик по всем видам документов в хронологическом порядке
+# (решение Adrian 29.09.2026: договор КН-001 → счёт КН-002 → акт КН-003 → …).
+DOC_SECTIONS = r'(Договоры|Счета|Акты.*|Допсоглашения.*|Соглашения.*|Документы.*)'
+secs = re.findall(r'^##\s+' + DOC_SECTIONS + r'\s*$(.*?)(?=^##\s|\Z)', text, re.S | re.M)
+if not secs:
+    sys.exit('✖ В finance-log нет разделов «## Договоры» / «## Счета» / «## Акты и соглашения» с таблицами.')
+nums, width, cells, legacy = [], 3, [], []
+for title, body in secs:
+    rows = [r for r in body.splitlines() if r.startswith('|') and not re.match(r'^\|\s*(№|-)', r)]
+    for r in rows:
+        cell = r.split('|')[1].strip().strip('*')
+        if cell in ('', '—', '-'):
+            continue
+        mm = re.fullmatch(r'№?\s*([А-ЯЁA-Z]{2}-)?(\d+)', cell)
+        if not mm:
+            errors.append(f'«{title}»: непонятный номер в таблице: «{cell}»'); continue
+        p, n = mm.group(1), mm.group(2)
+        if p is None:
+            if not a.legacy_ok:
+                errors.append(f'«{title}»: номер без префикса: «{cell}» (для старой серии Сферикса — --legacy-ok)')
+            legacy.append(int(n)); continue  # старая серия без префикса: учитывается только для максимума
+        if p != prefix:
+            errors.append(f'«{title}»: чужой префикс: «{cell}» при префиксе проекта «{prefix}»'); continue
         width = max(width, len(n))
-    nums.append(int(n)); cells.append(cell)
+        nums.append(int(n)); cells.append(f'{cell} ({title})')
 dups = sorted({n for n in nums if nums.count(n) > 1})
 if dups:
-    errors.append(f'повтор номеров: {dups}')
+    errors.append(f'один номер у нескольких документов: {[c for c, n in zip(cells, nums) if n in dups]} — '
+                  'у каждого документа проекта свой номер')
 
-nxt = (max(nums) + 1) if nums else 1
+nxt = max(nums + legacy) + 1 if (nums or legacy) else 1
 number = f'{prefix}{nxt:0{width}d}'
 taken = [f for f in os.listdir('.') if number in f]
 if taken:
     errors.append(f'файлы с номером {number} уже есть в папке: {taken}')
 
 last = cells[nums.index(max(nums))] if nums else None
-print(f'Реестр: {a.finance} · префикс проекта {prefix} · счетов в таблице: {len(nums)}'
-      + (f' · последний в таблице: {last}' if last else ''))
+print(f'Реестр: {a.finance} · префикс проекта {prefix} · документов с номером: {len(nums)}'
+      + (f' · последний: {last}' if last else ''))
 if errors:
     print('✖ ОСТАНОВКА, номер не выдан:'); [print('  —', e) for e in errors]; sys.exit(1)
-print(f'✔ Следующий номер счёта: {number}')
+print(f'✔ Следующий номер документа (договор, счёт, акт или допсоглашение — любой): {number}')
 if not nums:
-    print(f'  Это первый счёт проекта — номер договора тоже {number}.')
+    print(f'  Первый документ проекта — обычно договор: {number}; первый счёт тогда получит следующий номер.')

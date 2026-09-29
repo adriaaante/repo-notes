@@ -3,13 +3,13 @@
 const L = require('./lib.js');
 const { CLIENT, p, h, AlignmentType } = L;
 const CFG = {
-  num: '1', dateText: '«__» ________ 2026 г.',
+  num: CLIENT.prefix + '00_', dateText: '«__» ________ 2026 г.',
   basis: CLIENT.contract,
   items: [{ name: 'Услуги по продвижению за ________ 2026 г.', price: '120 000,00' }],
   total: '120 000,00',
   totalWords: '120 000 (Сто двадцать тысяч) рублей 00 копеек',
   paidBy: 'Оплата произведена на основании счёта № ____ от __.__.2026 г.',
-  out: 'Акт №1 ________ 2026 (120 000).docx',
+  out: 'Акт №' + CLIENT.prefix + '00_ ________ 2026 (120 000).docx',
 };
 L.save(CFG.out, [
   h(`АКТ № ${CFG.num}`), h('сдачи-приёмки оказанных услуг', 24), h(`от ${CFG.dateText}`, 22),

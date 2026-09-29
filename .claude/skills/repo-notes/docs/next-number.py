@@ -29,9 +29,9 @@ errors = []
 if not prefix or not re.fullmatch(r'[А-ЯЁA-Z]{2}-', prefix):
     sys.exit(f'✖ Префикс «{prefix}» не задан или не из двух заглавных букв с дефисом (например «КН-»). '
              'Задать в client.json → "prefix" или --prefix.')
-# Реестр префиксов клиентов: рядом со скриптом в скилле или в ~/.claude/skills/futureflow/docs/.
+# Реестр префиксов клиентов: рядом со скриптом в скилле или в ~/.claude/skills/repo-notes/docs/.
 reg_path = next((p for p in [os.path.join(os.path.dirname(os.path.abspath(__file__)), 'prefixes.json'),
-                             os.path.expanduser('~/.claude/skills/futureflow/docs/prefixes.json')] if os.path.exists(p)), None)
+                             os.path.expanduser('~/.claude/skills/repo-notes/docs/prefixes.json')] if os.path.exists(p)), None)
 if reg_path:
     reg = {k: v for k, v in json.load(open(reg_path, encoding='utf-8')).items() if not k.startswith('_')}
     owner = reg.get(prefix)

@@ -74,7 +74,19 @@ function bankTable() {
     new TableRow({ children: [cell('ИНН 772590578053   ОГРНИП 325774600319981\nПолучатель: ИП Зайдель Адриан Патрик', BW[0]), cell('Сч. №', BW[1], { align: AlignmentType.CENTER }), cell('40802810800008299634', BW[2])] }),
   ]});
 }
+// ЛОГОТИП FutureFlow в шапке СЧЁТА и ДОГОВОРА (правило repo-notes, раздел 3.0; образец — счёт КН-002 от 29.09.2026):
+// файл assets/futureflow-logo.png скилла (в проекте — _materials/brand/futureflow-logo.png), первый абзац документа,
+// по правому краю, отступ после 8 pt, ровно 140×30 px = 3,70×0,79 см (EMU 1333500×285750). Размер и файл не менять.
+const LOGO_W = 140, LOGO_H = 30;
+function logoFile() {
+  const c = [process.env.FF_LOGO, path.resolve(process.cwd(), '../brand/futureflow-logo.png'), path.resolve(__dirname, '../assets/futureflow-logo.png'),
+    path.join(process.env.HOME || '', '.claude/skills/repo-notes/assets/futureflow-logo.png')].filter(Boolean);
+  const f = c.find(x => fs.existsSync(x)); if (!f) throw new Error('нет futureflow-logo.png: скопируй $SK/assets/futureflow-logo.png в _materials/brand/');
+  return fs.readFileSync(f);
+}
+const logo = () => new Paragraph({ alignment: AlignmentType.RIGHT, spacing: { after: 160 },
+  children: [new ImageRun({ type: 'png', data: logoFile(), transformation: { width: LOGO_W, height: LOGO_H } })] });
 const PAGE = { properties: { page: { margin: { top: 850, right: 850, bottom: 850, left: 1130 } } } };
 const save = (name, children) => Packer.toBuffer(new Document({ sections: [{ ...PAGE, children }] }))
   .then(b => { fs.writeFileSync(name, b); console.log('ok', name); });
-module.exports = { CLIENT, F, t, tt, p, h, cell, signBlock, servicesTable, bankTable, save, ISP_LINE, ISP_FULL, ZAK_FULL, Paragraph, TextRun, ImageRun, AlignmentType };
+module.exports = { CLIENT, F, t, tt, p, h, cell, signBlock, servicesTable, bankTable, save, logo, ISP_LINE, ISP_FULL, ZAK_FULL, Paragraph, TextRun, ImageRun, AlignmentType };

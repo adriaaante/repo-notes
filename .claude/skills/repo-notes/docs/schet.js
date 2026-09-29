@@ -15,6 +15,7 @@ const CFG = {
 };
 const QR = fs.readFileSync(process.env.QR_PATH || CFG.qr);
 L.save(CFG.out, [
+  L.logo(),                                    // логотип FutureFlow — первым абзацем, справа (repo-notes, раздел 3.0)
   L.bankTable(),
   new Paragraph({ alignment: AlignmentType.CENTER, spacing: { before: 300, after: 240, line: 240 },
     children: [t(`Счёт на оплату № ${CFG.num} от ${CFG.dateText}`, { size: 26, bold: true })] }),

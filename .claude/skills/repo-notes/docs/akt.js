@@ -12,6 +12,7 @@ const CFG = {
   out: 'Акт №' + CLIENT.prefix + '00_ ________ 2026 (120 000).docx',
 };
 L.save(CFG.out, [
+  L.logo(),                                    // логотип FutureFlow — первым абзацем, справа (repo-notes, раздел 3.0)
   h(`АКТ № ${CFG.num}`), h('сдачи-приёмки оказанных услуг', 24), h(`от ${CFG.dateText}`, 22),
   p('Исполнитель: ' + L.ISP_LINE),
   p(`Заказчик: ${CLIENT.short}, ${CLIENT.inn_kpp}, ${CLIENT.address}, в лице ${CLIENT.director_title_genitive} ${CLIENT.director_genitive}.`),

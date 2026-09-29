@@ -74,10 +74,10 @@ function bankTable() {
     new TableRow({ children: [cell('ИНН 772590578053   ОГРНИП 325774600319981\nПолучатель: ИП Зайдель Адриан Патрик', BW[0]), cell('Сч. №', BW[1], { align: AlignmentType.CENTER }), cell('40802810800008299634', BW[2])] }),
   ]});
 }
-// ЛОГОТИП FutureFlow в шапке СЧЁТА и ДОГОВОРА (правило repo-notes, раздел 3.0; образец — счёт КН-002 от 29.09.2026):
-// файл assets/futureflow-logo.png скилла (в проекте — _materials/brand/futureflow-logo.png), первый абзац документа,
-// по правому краю, отступ после 8 pt, ровно 140×30 px = 3,70×0,79 см (EMU 1333500×285750). Размер и файл не менять.
-const LOGO_W = 140, LOGO_H = 30;
+// ЛОГОТИП FutureFlow — ОДИН во ВСЕХ документах (счёт, договор, акт, допсоглашение; в PDF-отчётах тот же PNG того же
+// размера): файл assets/futureflow-logo.png (в проекте — _materials/brand/), первый абзац, по правому краю, отступ после
+// 8 pt, ровно 93×20 px = 24,6×5,3 мм (EMU 885825×190500), синий как в файле — не менять (repo-notes, раздел 3.0).
+const LOGO_W = 93, LOGO_H = 20;
 function logoFile() {
   const c = [process.env.FF_LOGO, path.resolve(process.cwd(), '../brand/futureflow-logo.png'), path.resolve(__dirname, '../assets/futureflow-logo.png'),
     path.join(process.env.HOME || '', '.claude/skills/repo-notes/assets/futureflow-logo.png')].filter(Boolean);

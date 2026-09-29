@@ -7,9 +7,9 @@ python3 check-docx.py "Счёт №….docx" --expect КН-002 --sum 8000000
   --expect/--sum — строгая сверка: номер в заголовке счёта, в QR и в имени файла, сумма в QR (копейки).
   Любое расхождение — код выхода 1, документ не отдавать.
 python3 check-docx.py "Договор №….docx" --logo
-  --logo — только логотип (для договора). Для счёта логотип проверяется вместе с --expect/--sum.
-  Логотип: ПЕРВЫЙ абзац документа, по правому краю, картинка в тексте ровно 1333500×285750 EMU
-  (140×30 px = 3,70×0,79 см), файл побайтно = assets/futureflow-logo.png скилла (repo-notes, раздел 3.0)."""
+  --logo — только логотип (договор, акт, допсоглашение). Для счёта логотип проверяется вместе с --expect/--sum.
+  Логотип: ПЕРВЫЙ абзац документа, по правому краю, картинка в тексте ровно 885825×190500 EMU
+  (93×20 px = 24,6×5,3 мм), файл побайтно = assets/futureflow-logo.png скилла (repo-notes, раздел 3.0)."""
 import sys, zipfile, re, argparse
 ap = argparse.ArgumentParser(); ap.add_argument('file'); ap.add_argument('--expect'); ap.add_argument('--sum', type=int); ap.add_argument('--logo', action='store_true')
 A = ap.parse_args(); f = A.file
@@ -42,7 +42,7 @@ def logo_check():
     if '<w:jc w:val="right"/>' not in first: out.append('логотип не по правому краю')
     if '<wp:inline' not in first: out.append('логотип не «в тексте» (inline)')
     ext = re.search(r'<wp:extent cx="(\d+)" cy="(\d+)"', first)
-    if not ext or (ext.group(1), ext.group(2)) != ('1333500', '285750'): out.append(f'размер логотипа {ext.groups() if ext else "?"} EMU, нужен 1333500×285750 (140×30 px)')
+    if not ext or (ext.group(1), ext.group(2)) != ('885825', '190500'): out.append(f'размер логотипа {ext.groups() if ext else "?"} EMU, нужен 885825×190500 (93×20 px = 24,6×5,3 мм)')
     rid = re.search(r'r:embed="([^"]+)"', first); rels = z.read('word/_rels/document.xml.rels').decode('utf-8')
     tg = re.search(r'Id="' + re.escape(rid.group(1)) + r'"[^>]*Target="([^"]+)"', rels) if rid else None
     asset = next((q for q in [os.path.join(os.path.dirname(os.path.abspath(__file__)), '../assets/futureflow-logo.png'), '../brand/futureflow-logo.png',
@@ -51,7 +51,7 @@ def logo_check():
         out.append('картинка логотипа не совпадает с futureflow-logo.png из скилла')
     return out
 if A.expect or A.sum is not None or A.logo:
-    lb = logo_check(); bad += lb; print('=== логотип:', 'ок (первый абзац, справа, 140×30 px, файл из скилла)' if not lb else '; '.join(lb))
+    lb = logo_check(); bad += lb; print('=== логотип:', 'ок (первый абзац, справа, 24,6×5,3 мм, файл из скилла)' if not lb else '; '.join(lb))
 if A.logo and not (A.expect or A.sum is not None):
     print('✔ Логотип на месте' if not bad else '✖ РАСХОЖДЕНИЯ:\n  — ' + '\n  — '.join(bad)); sys.exit(1 if bad else 0)
 if A.expect or A.sum is not None:

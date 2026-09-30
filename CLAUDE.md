@@ -18,6 +18,9 @@
   `HOME=/tmp/x bash claude-code-environment-setup-repo-notes.sh && ls /tmp/x/.claude/skills` — только `repo-notes`.
 - Проверка генератора счёта: собрать счёт по `docs/schet.js` и `python3 docs/check-docx.py "Счёт №….docx" --expect N --sum K`
   — строка «логотип: ок».
+- Проверка шаблона договора `docs/dogovor.js`: с `sphere: 'medical'` и данными Dental Str.25 текст должен совпасть с
+  согласованным договором ДС-001 (`adriaaante/dentalstr25.ru`, `_materials/docs/`) дословно — любые правки условий
+  шаблона только с согласия владельца.
 
 ## Грабли
 - Новый текст setup-скрипта начинает действовать только после вставки в настройки окружения claude.ai/code.

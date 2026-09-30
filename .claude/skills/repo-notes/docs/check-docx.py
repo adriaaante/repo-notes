@@ -58,6 +58,17 @@ if pw and pm:
     wide = [int(w) for w in re.findall(r'<w:tblW w:type="dxa" w:w="(\d+)"|<w:tblW w:w="(\d+)" w:type="dxa"', xml) for w in w if w and int(w) > tw]
     print('=== ширина таблиц:', 'ок (не шире полей, %d twips)' % tw if not wide else 'шире полей: %s > %d' % (wide, tw))
     if wide and (A.expect or A.sum is not None or A.logo): bad.append('таблица шире полей листа (%s twips при полосе %d) — правый край режется при печати' % (wide, tw))
+# ровные отступы в акте (правило 30.09.2026): после даты ≥ 15 pt, «Итого» отделено от таблицы — иначе текст слипается
+if 'АКТ №' in text:
+    raw = re.findall(r'<w:p[ >].*?</w:p>', xml, re.S)
+    sp = lambda x, k: int((re.search(r'<w:spacing[^>]*w:' + k + r'="(\d+)"', x) or [0, 0])[1])
+    date = next((x for x in raw if re.sub(r'<[^>]+>', '', x).startswith('от «')), '')
+    tot = next((x for x in raw if re.sub(r'<[^>]+>', '', x).startswith('Итого:')), '')
+    gaps = []
+    if not date or sp(date, 'after') < 300: gaps.append('после даты акта отступ %d twips, нужно ≥ 300 (макет L.actDoc)' % (sp(date, 'after') if date else -1))
+    if tot and sp(tot, 'before') < 100: gaps.append('строка «Итого» прилипла к таблице (before %d, нужно ≥ 100)' % sp(tot, 'before'))
+    print('=== отступы акта:', 'ок' if not gaps else '; '.join(gaps))
+    if A.logo or A.expect: bad += gaps
 if A.expect or A.sum is not None or A.logo:
     lb = logo_check(); bad += lb; print('=== логотип:', 'ок (первый абзац, справа, 24,6×5,3 мм, файл из скилла)' if not lb else '; '.join(lb))
 if A.logo and not (A.expect or A.sum is not None):

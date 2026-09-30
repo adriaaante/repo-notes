@@ -90,7 +90,33 @@ function logoFile() {
 }
 const logo = () => new Paragraph({ alignment: AlignmentType.RIGHT, spacing: { after: 160 },
   children: [new ImageRun({ type: 'png', data: logoFile(), transformation: { width: LOGO_W, height: LOGO_H } })] });
+// АКТ — единый макет с ровными отступами (правило Adrian 30.09.2026: «всё ровно, с ровными отступами»). Ритм отступов:
+// шапка (заголовок, подзаголовок, дата) плотно, после даты 18 pt; внутри блока абзацы через 6 pt (GAP_IN); между блоками
+// (стороны → основание → таблица → итог → суммы → оговорки) 12 pt (GAP_BLOCK); перед подписями 24 pt. Руками отступы
+// в генераторах актов не подбирать — только этот макет.
+const GAP_IN = 120, GAP_BLOCK = 240;
+const hx = (text, size, after) => new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after, line: 240 },
+  children: [new TextRun({ text, font: F, size, bold: true })] });
+// c = { num, subtitle ('сдачи-приёмки оказанных услуг' | '… выполненных работ'), dateText ('«30» сентября 2026 г.'),
+//       basis, intro, items [{name, price}], total ('195 000,00'), totalText, payText, doneText }
+function actDoc(c) {
+  return [
+    logo(),
+    hx('АКТ № ' + c.num, 28, 60), hx(c.subtitle, 24, 60), hx('от ' + c.dateText, 22, 360),
+    p('Исполнитель: ' + ISP_LINE, { after: GAP_IN }),
+    p(`Заказчик: ${CLIENT.short}, ${CLIENT.inn_kpp}, ${CLIENT.address}, в лице ${CLIENT.director_title_genitive} ${CLIENT.director_genitive}.`, { after: GAP_BLOCK }),
+    p('Основание: ' + c.basis, { after: GAP_BLOCK }),
+    p(c.intro, { after: GAP_IN }),
+    servicesTable(c.items),
+    p(`Итого: ${c.total} руб. Без НДС.`, { align: AlignmentType.RIGHT, bold: true, before: GAP_IN, after: GAP_BLOCK }),
+    p(c.totalText, { after: GAP_IN }),
+    p(c.payText, { after: GAP_BLOCK }),
+    p(c.doneText, { after: GAP_BLOCK }),
+    p('Настоящий акт составлен в двух экземплярах, имеющих равную юридическую силу, по одному для каждой из Сторон.', { after: 480 }),
+    signBlock(),
+  ];
+}
 const PAGE = { properties: { page: { margin: { top: 850, right: 850, bottom: 850, left: 1130 } } } };
 const save = (name, children) => Packer.toBuffer(new Document({ sections: [{ ...PAGE, children }] }))
   .then(b => { fs.writeFileSync(name, b); console.log('ok', name); });
-module.exports = { CLIENT, F, t, tt, p, h, cell, signBlock, servicesTable, bankTable, save, logo, ISP_LINE, ISP_FULL, ZAK_FULL, Paragraph, TextRun, ImageRun, AlignmentType };
+module.exports = { actDoc, GAP_IN, GAP_BLOCK, CLIENT, F, t, tt, p, h, cell, signBlock, servicesTable, bankTable, save, logo, ISP_LINE, ISP_FULL, ZAK_FULL, Paragraph, TextRun, ImageRun, AlignmentType };

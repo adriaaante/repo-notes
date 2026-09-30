@@ -51,18 +51,24 @@ text = open(a.finance, encoding='utf-8').read()
 # Номера берутся из ВСЕХ таблиц реестра документов: договоры, счета, акты, допсоглашения —
 # у проекта ОДИН сквозной счётчик по всем видам документов в хронологическом порядке
 # (решение Adrian 29.09.2026: договор КН-001 → счёт КН-002 → акт КН-003 → …).
-DOC_SECTIONS = r'(Договоры|Счета|Акты.*|Допсоглашения.*|Соглашения.*|Документы.*)'
+# ⚠ [^\n]*, а не .*: с флагом re.S «.*» съедал весь раздел вместе с таблицей, и акты в счёт не шли (30.09.2026)
+DOC_SECTIONS = r'(Договоры|Счета|Акты[^\n]*|Допсоглашения[^\n]*|Соглашения[^\n]*|Документы[^\n]*)'
 secs = re.findall(r'^##\s+' + DOC_SECTIONS + r'\s*$(.*?)(?=^##\s|\Z)', text, re.S | re.M)
 if not secs:
     sys.exit('✖ В finance-log нет разделов «## Договоры» / «## Счета» / «## Акты и соглашения» с таблицами.')
 nums, width, cells, legacy = [], 3, [], []
 for title, body in secs:
-    rows = [r for r in body.splitlines() if r.startswith('|') and not re.match(r'^\|\s*(№|-)', r)]
+    lines = [r for r in body.splitlines() if r.startswith('|')]
+    # шапка таблицы — строка перед разделителем «|---|» (в шапке бывает не «№», а «Документ»)
+    rows = [r for i, r in enumerate(lines) if not re.match(r'^\|\s*(№|-)', r)
+            and not (i + 1 < len(lines) and re.match(r'^\|\s*:?-', lines[i + 1]))]
     for r in rows:
         cell = r.split('|')[1].strip().strip('*')
         if cell in ('', '—', '-'):
             continue
         mm = re.fullmatch(r'№?\s*([А-ЯЁA-Z]{2}-)?(\d+)', cell)
+        if not mm:  # «Акт № СФ-1558» / старые «Акт № 3», «Допсоглашение № 1 (Авито)» — номер после «№» в названии документа
+            mm = re.fullmatch(r'[А-ЯЁа-яё][^№|]*№\s*([А-ЯЁA-Z]{2}-)?(\d+)\b[^|]*', cell)
         if not mm:
             errors.append(f'«{title}»: непонятный номер в таблице: «{cell}»'); continue
         p, n = mm.group(1), mm.group(2)

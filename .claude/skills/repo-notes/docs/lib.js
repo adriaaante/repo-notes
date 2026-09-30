@@ -40,23 +40,27 @@ const ISP = ['ИСПОЛНИТЕЛЬ:', 'ИП Зайдель Адриан Пат
 const ZAK = ['ЗАКАЗЧИК:', CLIENT.short, CLIENT.inn_kpp, ...CLIENT.address_lines, CLIENT.director_title, CLIENT.director];
 while (ZAK.length < ISP.length) ZAK.push('');
 
+// Ширина полосы набора А4 (11906) при полях 1130/850 = 9926 twips — ВСЕ таблицы не шире TW, иначе вылезают за правое поле
+// и при печати режутся у края листа (так было до 30.09.2026: 10620 — на 1,2 см шире поля, в 2,7 мм от края бумаги).
+const TW = 9920;
+
 // ⚠ ИП Зайдель работает БЕЗ печати: «М.П.» только у Заказчика.
 function signBlock() {
   const col = (lines, sign, seal) => new TableCell({
-    width: { size: 5310, type: WidthType.DXA }, borders: { top: NO, bottom: NO, left: NO, right: NO },
+    width: { size: TW / 2, type: WidthType.DXA }, borders: { top: NO, bottom: NO, left: NO, right: NO },
     children: [...lines.map((x, i) => p(x, { bold: i === 0 })), p('', { after: 300 }), p('_______________ ' + sign), ...(seal ? [p('М.П.')] : [])],
   });
   return new Table({
-    columnWidths: [5310, 5310], width: { size: 10620, type: WidthType.DXA },
+    columnWidths: [TW / 2, TW / 2], width: { size: TW, type: WidthType.DXA },
     borders: { top: NO, bottom: NO, left: NO, right: NO, insideHorizontal: NO, insideVertical: NO },
     rows: [new TableRow({ children: [col(ISP, '/ Зайдель А. П. /', false), col(ZAK, `/ ${CLIENT.director_short} /`, true)] })],
   });
 }
 // Таблица услуг: по строке на позицию (акт закрывает несколько счетов — по строке на счёт)
 function servicesTable(items, head = 'Наименование работ, услуг') {
-  const W = [520, 5600, 900, 800, 1400, 1400];
+  const W = [500, 5100, 800, 700, 1410, 1410];   // сумма = TW
   const hc = (x, i) => cell(x, W[i], { bold: true, align: AlignmentType.CENTER, shade: 'F2F2F2' });
-  return new Table({ columnWidths: W, width: { size: 10620, type: WidthType.DXA }, rows: [
+  return new Table({ columnWidths: W, width: { size: TW, type: WidthType.DXA }, rows: [
     new TableRow({ tableHeader: true, children: ['№', head, 'Кол-во', 'Ед.', 'Цена', 'Сумма'].map(hc) }),
     ...items.map((it, i) => new TableRow({ children: [
       cell(String(i + 1), W[0], { align: AlignmentType.CENTER }), cell(it.name, W[1]),
@@ -67,8 +71,8 @@ function servicesTable(items, head = 'Наименование работ, ус�
 }
 // Шапка счёта с банковскими реквизитами Исполнителя
 function bankTable() {
-  const BW = [5400, 2200, 3020];
-  return new Table({ columnWidths: BW, width: { size: 10620, type: WidthType.DXA }, rows: [
+  const BW = [5000, 1900, 3020];   // сумма = TW
+  return new Table({ columnWidths: BW, width: { size: TW, type: WidthType.DXA }, rows: [
     new TableRow({ children: [cell('Банк получателя: АО «ТБанк»', BW[0]), cell('БИК', BW[1], { align: AlignmentType.CENTER }), cell('044525974', BW[2])] }),
     new TableRow({ children: [cell('', BW[0]), cell('Сч. №', BW[1], { align: AlignmentType.CENTER }), cell('30101810145250000974', BW[2])] }),
     new TableRow({ children: [cell('ИНН 772590578053   ОГРНИП 325774600319981\nПолучатель: ИП Зайдель Адриан Патрик', BW[0]), cell('Сч. №', BW[1], { align: AlignmentType.CENTER }), cell('40802810800008299634', BW[2])] }),

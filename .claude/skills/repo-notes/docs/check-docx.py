@@ -50,6 +50,14 @@ def logo_check():
     if tg and asset and hashlib.md5(z.read('word/' + tg.group(1))).hexdigest() != hashlib.md5(open(asset, 'rb').read()).hexdigest():
         out.append('картинка логотипа не совпадает с futureflow-logo.png из скилла')
     return out
+# таблицы не шире полосы набора: иначе правый край уходит за поле и при печати режется у края листа (урок 30.09.2026)
+pw = re.search(r'<w:pgSz[^>]*w:w="(\d+)"', xml); pm = re.search(r'<w:pgMar[^>]*/>', xml)
+if pw and pm:
+    ml = int(re.search(r'w:left="(\d+)"', pm.group(0)).group(1)); mr = int(re.search(r'w:right="(\d+)"', pm.group(0)).group(1))
+    tw = int(pw.group(1)) - ml - mr
+    wide = [int(w) for w in re.findall(r'<w:tblW w:type="dxa" w:w="(\d+)"|<w:tblW w:w="(\d+)" w:type="dxa"', xml) for w in w if w and int(w) > tw]
+    print('=== ширина таблиц:', 'ок (не шире полей, %d twips)' % tw if not wide else 'шире полей: %s > %d' % (wide, tw))
+    if wide and (A.expect or A.sum is not None or A.logo): bad.append('таблица шире полей листа (%s twips при полосе %d) — правый край режется при печати' % (wide, tw))
 if A.expect or A.sum is not None or A.logo:
     lb = logo_check(); bad += lb; print('=== логотип:', 'ок (первый абзац, справа, 24,6×5,3 мм, файл из скилла)' if not lb else '; '.join(lb))
 if A.logo and not (A.expect or A.sum is not None):

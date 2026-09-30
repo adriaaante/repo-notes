@@ -9,3 +9,4 @@ pages=$(python3 -c "import re,sys;print(len(re.findall(rb'/Type\s*/Page[^s]',ope
 blocks=$(python3 -c "import re,sys;s=re.sub(r'<!--.*?-->','',open(sys.argv[1],encoding='utf-8').read(),flags=re.S);print(len(re.findall(r'<section class=.page[ \"]',s)))" "$in")
 echo "PDF: $out — страниц $pages, блоков .page $blocks"
 [ "$pages" = "$blocks" ] || { echo "⚠ НЕ СОВПАДАЕТ: какой-то блок не влез на лист или не подцепился CSS/шрифт"; exit 1; }
+python3 "$(dirname "$(readlink -f "$0")")/check-pdf-logo.py" "$out"   # логотип: тот же PNG, #3c8ad8, 24,6×5,3 мм (3.0)

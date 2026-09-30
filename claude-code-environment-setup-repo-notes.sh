@@ -192,7 +192,9 @@ description: "Единый скилл Adrian / FutureFlow для ЛЮБОГО р
 | `docs/make-qr.py` · `check-docx.py` | QR по ГОСТ Р 56042 и проверка готового docx (`--expect` / `--sum` — строгая сверка) |
 | `templates/finance-log.md` · `promo-log.md` | Заготовки двух журналов проекта |
 | `templates/report.html` | Шаблон отчёта / аудита / КП в фирменном стиле |
-| `scripts/build-pdf.sh` | HTML → PDF + проверка числа страниц |
+| `scripts/build-pdf.sh` | HTML → PDF (отчёты, аудиты, КП) + проверка числа страниц и логотипа |
+| `scripts/docx-pdf.sh` | DOCX → PDF через LibreOffice без сжатия картинок + проверка логотипа (счёт, договор, акт) |
+| `scripts/check-pdf-logo.py` | Логотип в готовом PDF: исходные 1418×304 px, цвет #3c8ad8, 24,6×5,3 мм — у ЛЮБОГО PDF |
 
 Скилл лежит в `~/.claude/skills/repo-notes/` (ставит скрипт окружения) или в
 `.claude/skills/repo-notes/` репозитория; ниже `$SK` — эта папка.
@@ -231,6 +233,11 @@ description: "Единый скилл Adrian / FutureFlow для ЛЮБОГО р
 - **Проверка:** `check-docx.py` проверяет логотип сам — у счёта вместе с `--expect/--sum`, у договора,
   акта и допсоглашения флагом `--logo` (первый абзац, справа, inline, 885825×190500, файл побайтно из
   скилла). Код 1 — документ не отдавать.
+- **Один цвет во всех PDF** (урок 30.09.2026): в PDF счёта и договора логотип был другого оттенка, чем в Word и в
+  отчёте, — LibreOffice по умолчанию пережимает картинки в JPEG 291×62, синий «плывёт» (#418ee0 вместо #3c8ad8); а в
+  аудите логотип на обложке был белым SVG крупнее нормы. Поэтому: docx → PDF только `scripts/docx-pdf.sh` (без сжатия),
+  HTML → PDF только `scripts/build-pdf.sh`; оба сами запускают `check-pdf-logo.py`, код 1 — PDF не отдавать.
+  В HTML логотип — только `<img>` этого PNG, не SVG-symbol и не CSS-перекраска.
 - QR для оплаты — внизу счёта, как раньше (3.4).
 
 ### 3.0а Единый формат всех документов Word (правило Adrian 30.09.2026)
@@ -361,12 +368,12 @@ cd _materials/docs && npm i && pip install qrcode opencv-python-headless numpy
 **Грабли docx:** `\n` внутри TextRun строку НЕ переносит («…319981Получатель:») — только `tt()` из
 `lib.js`. Строке таблицы реквизитов и подписей в договоре — `cantSplit: true`, иначе в PDF
 подписи уезжают одни на следующую страницу (29.09.2026).
-**PDF из docx** (владелец просит «и в PDF»): в облачном контейнере LibreOffice без модуля Writer
-пишет «source file could not be loaded» — сначала `apt-get update && apt-get install -y
-libreoffice-writer-nogui`, затем `soffice --headless --convert-to pdf <файл>.docx` (из папки с
-файлом, имя латиницей — копию кириллического docx назвать `schet.docx`). Times New Roman
-заменяется метрически совместимым Liberation Serif — переносы строк те же. После конвертации:
-отрендерить листы в PNG (pymupdf) и посмотреть глазами, QR декодировать из PDF (cv2).
+**PDF из docx** (владелец просит «и в PDF») — только `bash $SK/scripts/docx-pdf.sh "<файл>.docx"`: рядом появится
+PDF, экспорт без сжатия картинок, затем проверка логотипа. Обычный `soffice --convert-to pdf` НЕ использовать — он
+пережимает логотип и QR в JPEG. В облачном контейнере сначала `apt-get update && apt-get install -y
+libreoffice-writer-nogui` (без него «source file could not be loaded»). Times New Roman заменяется метрически
+совместимым Liberation Serif — переносы строк те же. После конвертации: отрендерить листы в PNG (pymupdf) и посмотреть
+глазами, QR декодировать из PDF (cv2).
 Новый документ делать копированием генератора целиком, а не кусками.
 
 ### 3.5 Акты, договоры, допсоглашения

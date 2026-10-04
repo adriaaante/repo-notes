@@ -4,7 +4,8 @@
 наличие переносов <w:br/>, декод QR из вложенной картинки (сумма в копейках и номер счёта).
 python3 check-docx.py "Счёт №….docx"      (нужны: pip install opencv-python-headless numpy)
 python3 check-docx.py "Счёт №….docx" --expect КН-002 --sum 8000000
-  --expect/--sum — строгая сверка: номер в заголовке счёта, в QR и в имени файла, сумма в QR (копейки).
+  --expect/--sum — строгая сверка: номер в заголовке счёта, в QR и в имени файла, сумма в QR (копейки),
+  «Без НДС» в назначении платежа QR (Purpose) — банки этого требуют (решение Adrian 04.10.2026).
   Любое расхождение — код выхода 1, документ не отдавать.
 python3 check-docx.py "Договор №….docx" --logo
   --logo — только логотип (договор, акт, допсоглашение). Для счёта логотип проверяется вместе с --expect/--sum.
@@ -78,5 +79,9 @@ if A.expect or A.sum is not None:
     for q in qrs:
         if A.expect and not re.search(r'№\s*' + re.escape(A.expect) + r'(?!\d)', q): bad.append('в QR другой номер счёта')
         if A.sum is not None and f'Sum={A.sum}|' not in q + '|': bad.append(f'в QR сумма не {A.sum} коп.')
-    print('✔ Номер и сумма совпадают' if not bad else '✖ РАСХОЖДЕНИЯ:\n  — ' + '\n  — '.join(bad))
+        pur = (re.search(r'Purpose=([^|]*)', q) or [None, ''])[1]
+        print('    назначение:', pur or '—')
+        if 'БЕЗ НДС' not in pur.upper() and 'НДС НЕ ОБЛАГАЕТСЯ' not in pur.upper():
+            bad.append('в назначении платежа QR нет «Без НДС» — пересоздать QR через make-qr.py')
+    print('✔ Номер, сумма и «Без НДС» в QR совпадают' if not bad else '✖ РАСХОЖДЕНИЯ:\n  — ' + '\n  — '.join(bad))
     sys.exit(1 if bad else 0)

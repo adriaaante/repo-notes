@@ -1,5 +1,5 @@
 // СЧЁТ НА ОПЛАТУ. Копировать в schet-<номер>.js в _materials/docs/ проекта, заполнить CFG.
-// Порядок: сверить finance-log → QR (make-qr.py) → node schet-<номер>.js → check-docx.py → строка в finance-log.
+// Порядок: сверить finance-log → QR (make-qr.py, «Без НДС» в назначение дописывает сам) → node schet-<номер>.js → check-docx.py → строка в finance-log.
 const fs = require('fs');
 const L = require('./lib.js');
 const { CLIENT, p, t, AlignmentType, Paragraph, ImageRun, GAP_IN, GAP_BLOCK } = L;   // отступы — общий ритм документов (lib.js)

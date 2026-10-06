@@ -65,4 +65,18 @@
 ## Второй и следующие проекты на том же сервере
 - Переустанавливать сервер НЕЛЬЗЯ (сотрёт все проекты). Деплой — только через GitHub Actions по SSH (`deploy@IP`):
   первый запуск = скопировать код в `/srv/<проект>/`, положить `.env`, `docker compose up -d --build`.
-- Для этого пользователь добавляет в секреты нового репо IP и приватный ключ `deploy`.
+- Для этого у проекта СВОЙ ключ (не ключ Пуговки): Claude генерирует пару (в песочнице нет ssh-keygen — python
+  `cryptography`, `PrivateFormat.OpenSSH`), публичную половину добавляет в `authorized_keys` deploy разовым воркфлоу
+  репо, у которого уже есть SSH-секрет (так сделано для `your_friend`), приватную отдаёт пользователю файлом —
+  он кладёт её в секреты своего репо (`<ПРОЕКТ>_DEPLOY_HOST`, `<ПРОЕКТ>_DEPLOY_SSH_KEY`).
+- Root-операции от deploy (в группе docker): `docker run --rm --privileged --pid=host -v /:/host alpine chroot /host …`.
+- Через прокси сессии `gh api` работает для repo-путей, но secrets/variables/environments/deploy keys — 403.
+- Авто-режим Claude отдельно требует явного «да» на добавление домена в аккаунт и на изменения прод-сервера.
+
+## Домены и DNS
+- Внешний домен (купленный у Reg.ru и т.п.) — `POST /add-domain/{fqdn}` (бесплатно), Timeweb сам ставит MX/SPF/DMARC
+  своей почты. Дальше пользователь меняет NS у регистратора: ns1/ns2.timeweb.ru, ns3/ns4.timeweb.org.
+- Записи: `POST /api/v2/domains/{fqdn}/dns-records {"type":"A","value":"…"}`; v1 на корень домена отвечает
+  «Bad subdomain name». Поддомен — запрос на fqdn поддомена (`www.example.ru`).
+- Доступность сервера из-за рубежа (2026-10-06, check-host.net): HTTP на 5.42.96.9 открывается с 19 из 20 узлов, так что
+  для настоящего домена HTTP-проверка LE может пройти **[гипотеза]**; если нет — DNS-01 (acme.sh `dns_timeweb`).

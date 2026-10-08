@@ -5,7 +5,7 @@
 // работ», intro «Исполнитель выполнил, а Заказчик принял следующие работы:».
 const L = require('./lib.js');
 const CLIENT = L.CLIENT;
-const CFG = {
+const CFG = Object.assign({
   num: CLIENT.prefix + '00_', subtitle: 'сдачи-приёмки оказанных услуг', dateText: '«__» ________ 2026 г.',
   basis: CLIENT.contract,
   intro: 'Исполнитель оказал, а Заказчик принял следующие услуги:',
@@ -15,5 +15,5 @@ const CFG = {
   payText: 'Оплата производится на основании счёта № ____ от __.__.2026 г.',
   doneText: 'Вышеперечисленные услуги оказаны полностью и в срок. Заказчик претензий по объёму, качеству и срокам оказания услуг не имеет.',
   out: 'Акт №' + CLIENT.prefix + '00_ ________ 2026 (120 000).docx',
-};
+}, process.env.FF_DOC_CFG ? JSON.parse(process.env.FF_DOC_CFG) : {});   // CRM FutureFlow передаёт CFG сюда (тот же макет)
 L.save(CFG.out, L.actDoc(CFG));

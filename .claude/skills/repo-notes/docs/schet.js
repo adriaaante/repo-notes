@@ -3,7 +3,7 @@
 const fs = require('fs');
 const L = require('./lib.js');
 const { CLIENT, p, t, AlignmentType, Paragraph, ImageRun, GAP_IN, GAP_BLOCK } = L;   // отступы — общий ритм документов (lib.js)
-const CFG = {
+const CFG = Object.assign({
   num: CLIENT.prefix + '00_',                  // ТОЛЬКО из next-number.py: сквозной счётчик договоров/счетов/актов проекта
   dateText: '«__» ________ 2026 г.',
   basis: CLIENT.contract,                      // + «в редакции дополнительного соглашения № N от …», если есть
@@ -12,7 +12,7 @@ const CFG = {
   totalWords: 'Сто двадцать тысяч рублей 00 копеек',
   qr: 'qr-0000.png',
   out: 'Счёт №0000 (120 000).docx',
-};
+}, process.env.FF_DOC_CFG ? JSON.parse(process.env.FF_DOC_CFG) : {});   // CRM FutureFlow передаёт CFG сюда (тот же макет)
 const QR = fs.readFileSync(process.env.QR_PATH || CFG.qr);
 L.save(CFG.out, [
   L.logo(),                                    // логотип FutureFlow — первым абзацем, справа (repo-notes, раздел 3.0)

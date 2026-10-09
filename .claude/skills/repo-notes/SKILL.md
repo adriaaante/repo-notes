@@ -196,7 +196,7 @@ description: "Единый скилл Adrian / FutureFlow для ЛЮБОГО р
 | `scripts/build-pdf.sh` | HTML → PDF (отчёты, аудиты, КП) + проверка числа страниц и логотипа |
 | `scripts/docx-pdf.sh` | DOCX → PDF через LibreOffice без сжатия картинок + проверка логотипа (счёт, договор, акт) |
 | `scripts/check-pdf-logo.py` | Логотип в готовом PDF: исходные 1418×304 px, цвет #3c8ad8, 24,6×5,3 мм — у ЛЮБОГО PDF |
-| `scripts/crm.js` | Связь проекта с FutureFlow CRM (crm.futureflow.ru): `sync` — счета CRM в реестр и документы реестра с файлами в CRM; `status`, `paid`, `requisites`, `schedule`. Ключ — `FUTUREFLOW_CRM_API_KEY` |
+| `scripts/crm.js` | Связь проекта с FutureFlow CRM (crm.futureflow.ru): `sync` — в обе стороны (документы, файлы, оплаты); `status`, `paid`, `requisites`, `schedule`. Ключ — `FUTUREFLOW_CRM_API_KEY` |
 
 Скилл лежит в `~/.claude/skills/repo-notes/` (ставит скрипт окружения) или в
 `.claude/skills/repo-notes/` репозитория; ниже `$SK` — эта папка.
@@ -302,8 +302,10 @@ cd _materials/docs && npm i && pip install qrcode opencv-python-headless numpy
 ### 3.4 Счёт
 
 **Номер — строго по порядку, иначе документ не делать:**
-0. **Сначала `node $SK/scripts/crm.js sync`** из корня репо: счета, которые FutureFlow CRM выставила сама (по графику),
-   дописываются в таблицу «Счета» реестра — без этого `next-number.py` выдаст номер, уже занятый в CRM. Скрипт печатает
+0. **Сначала `node $SK/scripts/crm.js sync`** из корня репо — синхронизация в обе стороны. Из CRM: счета, акты,
+   допсоглашения и договоры, созданные в самой CRM, дописываются строкой в свою таблицу реестра, их Word/PDF — в
+   `_materials/docs`, оплаты, отмеченные в CRM, — в статус счёта (без этого `next-number.py` выдаст номер, уже занятый
+   в CRM). В CRM: всё из таблиц реестра с файлами. Изменился реестр или папка docs — закоммитить (и в `main`, правило H). Скрипт печатает
    следующий номер CRM — `next-number.py` обязан выдать тот же; разошлись — остановиться и разобраться. Нет ключа
    `FUTUREFLOW_CRM_API_KEY` — скрипт предупредит и ничего не тронет: работаем по реестру, владельцу сказать про ключ.
 1. `cd _materials/docs && python3 next-number.py` — единственный источник номера. Скрипт читает

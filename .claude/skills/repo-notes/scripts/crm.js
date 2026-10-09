@@ -2,8 +2,9 @@
 // Связь проекта с FutureFlow CRM (https://crm.futureflow.ru): документы проекта видны в CRM, счета CRM — в реестре проекта.
 // Без зависимостей (Node 18+). Запускать из корня репозитория проекта.
 //
-//   node $SK/scripts/crm.js sync          — ГЛАВНОЕ: перед выдачей номера и после каждого документа.
-//        1) счета, которые CRM выставила сама (по графику), дописываются в таблицу «Счета» finance-log — next-number.py их увидит;
+//   node $SK/scripts/crm.js sync          — ГЛАВНОЕ: перед выдачей номера и после каждого документа. В обе стороны:
+//        1) из CRM: счета, акты, допсоглашения и договоры, созданные в CRM, — строкой в свою таблицу finance-log (next-number.py
+//           их увидит), их файлы — в _materials/docs; оплаты, отмеченные в CRM, — в статус счёта;
 //        2) каждый документ из таблиц finance-log («Договоры», «Счета», «Акты и соглашения») с файлами .docx/.pdf из
 //           _materials/docs уходит в CRM; повторный запуск ничего не задваивает, «оплачен» в статусе — оплата в CRM.
 //   node $SK/scripts/crm.js status        — что CRM знает о клиенте: следующий номер, неоплаченные счета, график
@@ -106,22 +107,95 @@ async function push(repo, d) {
   return { ...r, files: [f.docx, f.pdf].filter(Boolean).length };
 }
 
-// счета CRM, которых нет в реестре, — строкой в таблицу «Счета» (next-number.py их увидит)
-function appendToLog(text, invoices) {
-  if (!invoices.length) return text;
+// ---------- обратная сторона: CRM → реестр и файлы проекта ----------
+const SEC_OF = { invoice: 'Счета', act: 'Акты и соглашения', addendum: 'Акты и соглашения', contract: 'Договоры' };
+const fmtRub = (k) => (k / 100).toLocaleString('ru-RU', { minimumFractionDigits: 2 }).replace(/\u00a0/g, ' ') + ' ₽';
+const ru = (d) => (d || '').split('-').reverse().join('.');
+// таблицы реестра: раздел → { head, last (индекс последней строки таблицы), rows: { номер → индекс строки } }
+function layout(lines) {
+  const out = {};
+  let sec = null, head = null;
+  lines.forEach((line, i) => {
+    const h = /^##\s+(.+?)\s*$/.exec(line);
+    if (h) { sec = SECTIONS.find(([name]) => h[1].startsWith(name))?.[0] || null; head = null; return; }
+    if (!sec || !line.trim().startsWith('|')) return;
+    const c = cells(line);
+    if (!head) { head = c.map((x) => x.toLowerCase()); out[sec] = out[sec] || { head, last: i, rows: {} }; out[sec].last = i; return; }
+    out[sec].last = i;
+    if (/^:?-{3,}/.test(c[0])) return;
+    const ni = head.findIndex((x) => /^№|^документ/.test(x));
+    const num = ni >= 0 && (/[A-Za-zА-ЯЁ]{2}-\d{3,}/.exec(c[ni]) || [])[0];
+    if (num) out[sec].rows[num] = i;
+  });
+  return out;
+}
+// строка таблицы по её заголовку: № / Дата / Сумма|Цена / Основание|Предмет|Договор / Статус
+function rowFor(head, v) {
+  return '| ' + head.map((h) => /^№|^документ/.test(h) ? v.number : /дата/.test(h) ? v.date : /сумм|цена/.test(h) ? v.sum
+    : /основани|предмет|договор/.test(h) ? v.basis : /статус/.test(h) ? v.status : '').join(' | ') + ' |';
+}
+function setStatus(line, head, status) {
+  const c = cells(line), si = head.findIndex((x) => /статус/.test(x));
+  if (si < 0) return line;
+  c[si] = status;
+  return '| ' + c.join(' | ') + ' |';
+}
+const ST = { issued: 'выставлен в CRM', sent: 'выставлен в CRM, отправлен', partial: 'оплачен частично (CRM)', paid: 'оплачен', cancelled: 'отменён' };
+const NAME = { invoice: 'Счёт', act: 'Акт', addendum: 'Доп. соглашение', contract: 'Договор' };
+
+// 1) документы, созданные в CRM, — строкой в свою таблицу; 2) оплаты из CRM — в статус счёта. Возвращает отчёт.
+function pullIntoLog(text, c) {
   const lines = text.split('\n');
-  const start = lines.findIndex((l) => /^##\s+Счета\s*$/.test(l));
-  if (start < 0) return text;
-  let end = start + 1;
-  while (end < lines.length && !/^##\s/.test(lines[end])) end++;
-  let last = -1;
-  for (let i = start + 1; i < end; i++) if (lines[i].trim().startsWith('|')) last = i;
-  if (last < 0) return text;
-  const fmt = (k) => (k / 100).toLocaleString('ru-RU', { minimumFractionDigits: 2 }).replace(/ /g, ' ') + ' ₽';
-  const ST = { issued: 'выставлен в CRM', sent: 'выставлен в CRM, отправлен', partial: 'оплачен частично', paid: 'оплачен', cancelled: 'отменён' };
-  const rows = invoices.map((i) => `| ${i.number} | ${i.date.split('-').reverse().join('.')} | ${fmt(i.total_kop)} | ${i.item || 'по графику CRM'} (выставлен в CRM) | ${ST[i.status] || i.status} |`);
-  lines.splice(last + 1, 0, ...rows);
-  return lines.join('\n');
+  const L = layout(lines);
+  const added = [], paid = [];
+  const crmItems = [...c.invoices.map((i) => ({ ...i, type: 'invoice' })), ...c.documents.filter((d) => d.number && SEC_OF[d.type])];
+  const inserts = {};
+  for (const it of crmItems) {
+    const sec = L[SEC_OF[it.type]];
+    if (!sec || !it.from_crm || it.status === 'cancelled' || sec.rows[it.number] != null) continue;
+    const kop = it.total_kop ?? it.kop;
+    (inserts[SEC_OF[it.type]] = inserts[SEC_OF[it.type]] || []).push(rowFor(sec.head, {
+      number: it.number, date: ru(it.date), sum: kop ? fmtRub(kop) : '—',
+      basis: `${it.type === 'invoice' ? (it.item || 'по графику CRM') : (it.title || NAME[it.type])} (создан в CRM)`,
+      status: it.type === 'invoice' ? (it.status === 'paid' ? `✅ оплачен ${ru(it.paid_date)} (CRM)` : ST[it.status] || it.status) : 'создан в CRM',
+    }));
+    added.push(it.number);
+  }
+  // оплаты: в CRM оплачен, в реестре — нет
+  const inv = L['Счета'];
+  if (inv) for (const i of c.invoices) {
+    const idx = inv.rows[i.number];
+    if (idx == null || !['paid', 'partial'].includes(i.status)) continue;
+    const st = cells(lines[idx])[inv.head.findIndex((x) => /статус/.test(x))] || '';
+    if (/оплачен/.test(st.toLowerCase()) && !/не\s*оплачен/.test(st.toLowerCase()) && i.status === 'paid') continue;
+    lines[idx] = setStatus(lines[idx], inv.head, i.status === 'paid' ? `✅ оплачен ${ru(i.paid_date)} (отмечено в CRM)` : ST.partial);
+    paid.push(i.number);
+  }
+  // вставки — снизу вверх, чтобы индексы не съезжали
+  for (const [secName, rows] of Object.entries(inserts).sort((x, y) => L[y[0]].last - L[x[0]].last)) lines.splice(L[secName].last + 1, 0, ...rows);
+  return { text: lines.join('\n'), added, paid };
+}
+
+// файлы документов, созданных в CRM, — в _materials/docs, если в проекте их ещё нет
+async function pullFiles(repo, c) {
+  const got = [];
+  const items = [...c.invoices.map((i) => ({ ...i, kind: 'invoice', type: 'invoice' })), ...c.documents.map((d) => ({ ...d, kind: 'document' }))]
+    .filter((x) => x.from_crm && x.number && x.status !== 'cancelled');
+  for (const x of items) {
+    const have = filesFor(x.number);
+    const kop = x.total_kop ?? x.kop;
+    const base = (x.file_name && x.file_name.replace(/\.(docx|pdf)$/i, '')) ||
+      `${NAME[x.type] || 'Документ'} №${x.number}${kop ? ` (${(kop / 100).toLocaleString('ru-RU').replace(/\u00a0/g, ' ')})` : ''}`;
+    for (const fmt of ['docx', 'pdf']) {
+      if (!x[fmt] || have[fmt]) continue;
+      const r = await fetch(`${BASE}/ext/v1/files/${x.kind}/${x.id}/${fmt}?repo=${encodeURIComponent(repo)}`, { headers: { authorization: 'Bearer ' + KEY } });
+      if (!r.ok) continue;
+      fs.mkdirSync(DOCS, { recursive: true });
+      fs.writeFileSync(path.join(DOCS, `${base}.${fmt}`), Buffer.from(await r.arrayBuffer()));
+      got.push(`${base}.${fmt}`);
+    }
+  }
+  return got;
 }
 
 async function main() {
@@ -137,15 +211,19 @@ async function main() {
   }
   if (cmd === 'sync') {
     const c = await api('GET', '/ext/v1/client?repo=' + encodeURIComponent(repo));
-    let text = fs.readFileSync(LOG, 'utf8');
-    const known = new Set(readLog(text, c.prefix).map((d) => d.number));
-    const fromCrm = c.invoices.filter((i) => i.from_crm && !known.has(i.number) && i.status !== 'cancelled');
-    if (fromCrm.length) {
-      text = appendToLog(text, fromCrm);
-      fs.writeFileSync(LOG, text);
-      console.log(`↓ в реестр дописаны счета из CRM: ${fromCrm.map((i) => i.number).join(', ')} — закоммитьте ${LOG}`);
+    // ↓ из CRM: документы, созданные в CRM, и оплаты, отмеченные в CRM, — в реестр; их файлы — в _materials/docs
+    const pulled = pullIntoLog(fs.readFileSync(LOG, 'utf8'), c);
+    if (pulled.added.length || pulled.paid.length) {
+      fs.writeFileSync(LOG, pulled.text);
+      if (pulled.added.length) console.log(`↓ в реестр дописаны документы из CRM: ${pulled.added.join(', ')}`);
+      if (pulled.paid.length) console.log(`↓ оплаты из CRM: ${pulled.paid.join(', ')}`);
     }
-    const docs = readLog(text, c.prefix).filter((d) => d.date && !d.cancelled && !fromCrm.some((i) => i.number === d.number));
+    const files = await pullFiles(repo, c);
+    if (files.length) console.log(`↓ файлы из CRM в ${DOCS}: ${files.join(', ')}`);
+    if (pulled.added.length || pulled.paid.length || files.length) console.log(`  закоммитьте ${LOG} и ${DOCS} (и в main — правило H скилла)`);
+    // ↑ в CRM: всё из реестра, кроме созданного в самой CRM
+    const own = new Set([...c.invoices, ...c.documents].filter((x) => x.from_crm).map((x) => x.number));
+    const docs = readLog(pulled.text, c.prefix).filter((d) => d.date && !d.cancelled && !own.has(d.number));
     for (const d of docs) {
       try {
         const r = await push(repo, d);

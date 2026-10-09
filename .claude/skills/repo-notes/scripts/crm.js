@@ -11,24 +11,24 @@
 //   node $SK/scripts/crm.js requisites    — реквизиты из _materials/docs/client.json в карточку клиента CRM (префикс — только если его нет)
 //   node $SK/scripts/crm.js schedule <день> <сумма> [ГГГГ-ММ] ["строка услуги"] — цена по графику (с месяца — старая строка закроется)
 //
-// Ключ — переменная окружения FF_CRM_API_KEY (настройки окружения claude.ai/code; выдаётся в CRM → «Настройки» →
+// Ключ — переменная окружения FUTUREFLOW_CRM_API_KEY (настройки окружения claude.ai/code; выдаётся в CRM → «Настройки» →
 // «Сессии проектов»). Без ключа скрипт ничего не ломает: предупреждает и выходит с кодом 0 — документ остаётся в репо.
-// Репозиторий берётся из git remote origin (или FF_CRM_REPO=owner/name), адрес CRM — FF_CRM_URL.
+// Репозиторий берётся из git remote origin (или FUTUREFLOW_CRM_REPO=owner/name), адрес CRM — FUTUREFLOW_CRM_URL.
 'use strict';
 const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 
-const BASE = (process.env.FF_CRM_URL || 'https://crm.futureflow.ru').replace(/\/$/, '');
-const KEY = process.env.FF_CRM_API_KEY || '';
+const BASE = (process.env.FUTUREFLOW_CRM_URL || 'https://crm.futureflow.ru').replace(/\/$/, '');
+const KEY = process.env.FUTUREFLOW_CRM_API_KEY || '';
 const DOCS = '_materials/docs';
 const LOG = '_materials/finance-log.md';
 
 function repoName() {
-  if (process.env.FF_CRM_REPO) return process.env.FF_CRM_REPO;
+  if (process.env.FUTUREFLOW_CRM_REPO) return process.env.FUTUREFLOW_CRM_REPO;
   const url = execFileSync('git', ['remote', 'get-url', 'origin']).toString().trim();
   const m = /([^/:]+)\/([^/]+?)(?:\.git)?$/.exec(url);
-  if (!m) throw new Error('Не понял репозиторий из ' + url + ' — задайте FF_CRM_REPO=owner/name');
+  if (!m) throw new Error('Не понял репозиторий из ' + url + ' — задайте FUTUREFLOW_CRM_REPO=owner/name');
   return `${m[1]}/${m[2]}`;
 }
 async function api(method, url, body) {
@@ -126,7 +126,7 @@ function appendToLog(text, invoices) {
 
 async function main() {
   const [cmd = 'status', ...args] = process.argv.slice(2);
-  if (!KEY) { console.log('⚠ Нет ключа FF_CRM_API_KEY — в CRM ничего не отправлено (документ остаётся в репозитории). Ключ: CRM → «Настройки» → «Сессии проектов».'); return; }
+  if (!KEY) { console.log('⚠ Нет ключа FUTUREFLOW_CRM_API_KEY — в CRM ничего не отправлено (документ остаётся в репозитории). Ключ: CRM → «Настройки» → «Сессии проектов».'); return; }
   const repo = repoName();
   if (cmd === 'status') {
     const c = await api('GET', '/ext/v1/client?repo=' + encodeURIComponent(repo));

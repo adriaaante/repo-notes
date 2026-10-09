@@ -8,7 +8,7 @@
 //           _materials/docs уходит в CRM; повторный запуск ничего не задваивает, «оплачен» в статусе — оплата в CRM.
 //   node $SK/scripts/crm.js status        — что CRM знает о клиенте: следующий номер, неоплаченные счета, график
 //   node $SK/scripts/crm.js paid КН-004 [ДД.ММ.ГГГГ]                     — отметить оплату счёта
-//   node $SK/scripts/crm.js requisites    — реквизиты из _materials/docs/client.json в карточку клиента CRM
+//   node $SK/scripts/crm.js requisites    — реквизиты из _materials/docs/client.json в карточку клиента CRM (префикс — только если его нет)
 //   node $SK/scripts/crm.js schedule <день> <сумма> [ГГГГ-ММ] ["строка услуги"] — цена по графику (с месяца — старая строка закроется)
 //
 // Ключ — переменная окружения FF_CRM_API_KEY (настройки окружения claude.ai/code; выдаётся в CRM → «Настройки» →
@@ -74,10 +74,18 @@ function readLog(text, prefix) {
 // строка услуги счёта: первая «…» с «договор», иначе — без неё (в CRM подставится заголовок)
 const itemOf = (basis) => (basis.match(/«([^»]{15,})»/g) || []).map((q) => q.slice(1, -1)).find((q) => /договор/i.test(q)) || '';
 
+// файлы документа: в _materials/docs и подпапках (out/…); имя содержит номер целиком — «Счёт №КН-004 …», «Счёт № АД-1548 …»,
+// «Счёт АД-1550 от …»; «КН-0021» за «КН-002» не принимается
+function listDocs(dir, depth = 2) {
+  if (!fs.existsSync(dir)) return [];
+  return fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => e.isDirectory()
+    ? (depth > 1 && !/^(node_modules|img|\.)/.test(e.name) ? listDocs(path.join(dir, e.name), depth - 1) : [])
+    : [path.join(dir, e.name)]);
+}
+// документ — по ПЕРВОМУ номеру в имени: «Доп. соглашение №КН-003 к договору №КН-001» — это КН-003, не договор КН-001
+const firstNumber = (name) => (/(?:^|[^0-9A-Za-zА-Яа-яЁё])([A-Za-zА-ЯЁ]{2}-\d{3,})(?![0-9])/.exec(name) || [])[1];
 function filesFor(number) {
-  if (!fs.existsSync(DOCS)) return {};
-  const all = fs.readdirSync(DOCS).map((f) => f.normalize('NFC'));
-  const hit = all.filter((f) => new RegExp(`№\\s?${number.replace(/[-]/g, '\\-')}(?![0-9])`).test(f));
+  const hit = listDocs(DOCS).filter((f) => firstNumber(path.basename(f).normalize('NFC')) === number);
   return { docx: hit.find((f) => /\.docx$/i.test(f)), pdf: hit.find((f) => /\.pdf$/i.test(f)) };
 }
 
@@ -88,10 +96,10 @@ async function push(repo, d) {
   const kop = kopOf(d.sum);
   if (kop) fd.set('kop', String(kop));
   if (d.type === 'invoice') { const it = itemOf(d.basis); if (it) fd.set('item', it); }
-  const title = (f.docx || f.pdf || '').replace(/\.(docx|pdf)$/i, '');
+  const title = path.basename(f.docx || f.pdf || '').normalize('NFC').replace(/\.(docx|pdf)$/i, '');
   if (title) fd.set('title', title);
   fd.set('note', 'из реестра проекта (finance-log)');
-  for (const k of ['docx', 'pdf']) if (f[k]) fd.set(k, new Blob([fs.readFileSync(path.join(DOCS, f[k]))]), f[k]);
+  for (const k of ['docx', 'pdf']) if (f[k]) fd.set(k, new Blob([fs.readFileSync(f[k])]), path.basename(f[k]).normalize('NFC'));
   const r = await api('POST', '/ext/v1/documents', fd);
   if (d.type === 'invoice' && d.paid) await api('POST', '/ext/v1/invoices/paid', { repo, number: d.number, date: d.date, note: 'оплачен по реестру проекта' });
   return { ...r, files: [f.docx, f.pdf].filter(Boolean).length };
@@ -156,8 +164,8 @@ async function main() {
   }
   if (cmd === 'requisites') {
     const cj = JSON.parse(fs.readFileSync(path.join(DOCS, 'client.json'), 'utf8'));
-    delete cj._comment; delete cj.prefix;
-    const r = await api('PATCH', '/ext/v1/client', { repo, ...cj });
+    const { _comment, prefix, ...fields } = cj;
+    const r = await api('PATCH', '/ext/v1/client', { repo, ...fields, set_prefix: prefix, ...(fields.party_full ? { kind: 'ip' } : {}) });
     console.log(`Реквизиты ${r.name} обновлены в CRM`);
     return;
   }

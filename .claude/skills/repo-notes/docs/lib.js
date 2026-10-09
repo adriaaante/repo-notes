@@ -34,10 +34,11 @@ const cell = (text, w, o = {}) => new TableCell({
 // Исполнитель — постоянные реквизиты
 const ISP_LINE = 'ИП Зайдель Адриан Патрик, ИНН 772590578053, ОГРНИП 325774600319981, 115407, г. Москва, ул. Затонная, д. 5, корп. 4, кв. 27, тел. +7 925 904-01-11.';
 const ISP_FULL = 'Индивидуальный предприниматель Зайдель Адриан Патрик (ОГРНИП 325774600319981, ИНН 772590578053), именуемый в дальнейшем «Исполнитель», с одной стороны';
-const ZAK_FULL = `${CLIENT.full} в лице ${CLIENT.director_title_genitive} ${CLIENT.director_genitive}, действующего на основании ${CLIENT.basis_doc}, именуемое в дальнейшем «Заказчик», с другой стороны`;
+// Заказчик-ИП: в client.json задать party_full целиком («Индивидуальный предприниматель …, именуемая …»), director_* можно не заполнять.
+const ZAK_FULL = CLIENT.party_full || `${CLIENT.full} в лице ${CLIENT.director_title_genitive} ${CLIENT.director_genitive}, действующего на основании ${CLIENT.basis_doc}, именуемое в дальнейшем «Заказчик», с другой стороны`;
 const ISP = ['ИСПОЛНИТЕЛЬ:', 'ИП Зайдель Адриан Патрик', 'ИНН 772590578053', 'ОГРНИП 325774600319981',
   '115407, г. Москва, ул. Затонная,', 'д. 5, корп. 4, кв. 27', 'Р/с 40802810800008299634', 'АО «ТБанк», БИК 044525974', 'тел. +7 925 904-01-11'];
-const ZAK = ['ЗАКАЗЧИК:', CLIENT.short, CLIENT.inn_kpp, ...CLIENT.address_lines, CLIENT.director_title, CLIENT.director];
+const ZAK = ['ЗАКАЗЧИК:', CLIENT.short, CLIENT.inn_kpp, ...CLIENT.address_lines, CLIENT.director_title, CLIENT.director].filter(Boolean);
 while (ZAK.length < ISP.length) ZAK.push('');
 
 // Ширина полосы набора А4 (11906) при полях 1130/850 = 9926 twips — ВСЕ таблицы не шире TW, иначе вылезают за правое поле
@@ -108,7 +109,7 @@ function actDoc(c) {
     logo(),
     hx('АКТ № ' + c.num, 28, 60), hx(c.subtitle, 24, 60), hx('от ' + c.dateText, 22, 360),
     p('Исполнитель: ' + ISP_LINE, { after: GAP_IN }),
-    p(`Заказчик: ${CLIENT.short}, ${CLIENT.inn_kpp}, ${CLIENT.address}, в лице ${CLIENT.director_title_genitive} ${CLIENT.director_genitive}.`, { after: GAP_BLOCK }),
+    p(`Заказчик: ${CLIENT.short}, ${CLIENT.inn_kpp}, ${CLIENT.address}${CLIENT.party_full ? '' : `, в лице ${CLIENT.director_title_genitive} ${CLIENT.director_genitive}`}.`, { after: GAP_BLOCK }),
     p('Основание: ' + c.basis, { after: GAP_BLOCK }),
     p(c.intro, { after: GAP_IN }),
     servicesTable(c.items),

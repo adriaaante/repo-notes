@@ -60,12 +60,13 @@ function readLog(text, prefix) {
     if (!head) { head = c.map((x) => x.toLowerCase()); continue; }
     if (/^:?-{3,}/.test(c[0])) continue;
     const col = (re) => { const i = head.findIndex((x) => re.test(x)); return i >= 0 ? strip(c[i]) : ''; };
-    const number = col(/^№/);
+    const cell = col(/^№|^документ/);   // «№» или «Документ» (у Сферикса): «СФ-1558», «Акт № 1» — без серии клиента не берём
+    const number = (/[A-Za-zА-ЯЁ]{2}-\d{3,}/.exec(cell) || [])[0] || '';
     if (!number || (prefix && !number.startsWith(prefix))) continue;
     const basis = col(/основани|предмет/);
     const status = col(/статус/).toLowerCase();
     let type = sec[1];
-    if (type === 'act' && /соглашени/i.test(basis + ' ' + col(/сумм/))) type = 'addendum';
+    if (type === 'act' && /соглашени/i.test(cell + ' ' + basis + ' ' + col(/сумм/))) type = 'addendum';
     rows.push({ type, number, date: toIso(col(/дата/)), sum: col(/сумм|цена/), basis, status,
       paid: /оплачен/.test(status) && !/не\s*оплачен|ждём|ждем/.test(status), cancelled: /отмен|аннулир/.test(status) });
   }
@@ -131,7 +132,7 @@ async function main() {
     const c = await api('GET', '/ext/v1/client?repo=' + encodeURIComponent(repo));
     console.log(`${c.name} · следующий номер в CRM: ${c.next_number || '— (нет префикса)'}`);
     for (const i of c.open_invoices) console.log(`  ждёт оплаты: ${i.number} от ${i.date} — ${(i.debt_kop / 100).toLocaleString('ru-RU')} ₽`);
-    for (const s of c.schedules) console.log(`  график: ${s.day}-го — ${(s.kop / 100).toLocaleString('ru-RU')} ₽ ${s.kind === 'transfer' ? '(перевод)' : ''}${s.starts ? ' с ' + s.starts : ''}`);
+    for (const s of c.schedules) console.log(`  график: ${s.day}-го — ${(s.kop / 100).toLocaleString('ru-RU')} ₽${s.kind === 'transfer' ? ' (перевод)' : ''}${s.starts ? ' с ' + s.starts : ''}${s.ends ? ' по ' + s.ends : ''}`);
     return;
   }
   if (cmd === 'sync') {
@@ -148,7 +149,7 @@ async function main() {
     for (const d of docs) {
       try {
         const r = await push(repo, d);
-        console.log(`↑ ${d.number} (${d.type}) — ${r.created ? 'добавлен' : 'обновлён'} в CRM, файлов: ${r.files}${d.paid ? ', оплачен' : ''}`);
+        console.log(`↑ ${d.number} (${d.type}) — ${r.created ? 'добавлен' : 'обновлён'} в CRM, файлов: ${r.files}${d.type === 'invoice' && d.paid ? ', оплачен' : ''}`);
       } catch (e) { console.log(`✗ ${d.number}: ${e.message}`); if (e.status === 401) process.exitCode = 1; }
     }
     const after = await api('GET', '/ext/v1/client?repo=' + encodeURIComponent(repo));

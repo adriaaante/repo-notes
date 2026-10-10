@@ -14,7 +14,7 @@ const tt = (text, o = {}) => String(text).split('\n').map((s, i) =>
   new TextRun({ text: s, font: F, size: o.size || 20, bold: !!o.bold, break: i ? 1 : 0 }));
 const t = (text, o = {}) => new TextRun({ text, font: F, size: o.size || 20, bold: !!o.bold });
 const p = (text, o = {}) => new Paragraph({
-  alignment: o.align || AlignmentType.LEFT,
+  alignment: o.align || AlignmentType.LEFT, keepNext: !!o.keepNext,   // keepNext — заголовок не отрывается от следующего блока
   spacing: { before: o.before || 0, after: o.after === undefined ? 80 : o.after, line: 240 },
   children: tt(text, o),
 });
@@ -56,7 +56,7 @@ function signBlock() {
   return new Table({
     columnWidths: [TW / 2, TW / 2], width: { size: TW, type: WidthType.DXA },
     borders: { top: NO, bottom: NO, left: NO, right: NO, insideHorizontal: NO, insideVertical: NO },
-    rows: [new TableRow({ children: [col(ISP, '/ Зайдель А. П. /', false), col(ZAK, `/ ${CLIENT.director_short} /`, true)] })],
+    rows: [new TableRow({ cantSplit: true, children: [col(ISP, '/ Зайдель А. П. /', false), col(ZAK, `/ ${CLIENT.director_short} /`, true)] })],
   });
 }
 // Таблица услуг: по строке на позицию (акт закрывает несколько счетов — по строке на счёт)

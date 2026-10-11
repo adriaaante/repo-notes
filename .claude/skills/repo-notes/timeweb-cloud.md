@@ -36,6 +36,22 @@
 6. API Timeweb через прокси сессии иногда рвёт соединение (`curl: (35) … reset`): `curl --retry 3 --retry-all-errors`.
    POST мог оборваться, но не выполниться — перед повтором проверять состояние (например, есть ли уже IP).
 
+7. **Зоны доступности и цены (проверено 2026-10-11, проект Клинио).** `POST /servers` без `availability_zone`
+   или в закрытой зоне → 409 `location_not_available` / `availability_zone_closed`. Тогда были закрыты msk-1, spb-1,
+   spb-3, открыт spb-2 — перебирать зоны полем `availability_zone`. Поле `price` у пресетов — прайс; скидка, которая
+   есть у старого сервера аккаунта, на новые тарифы может не действовать: факт — только `GET /account/services/cost`
+   сразу после создания (Cloud-15 = 1 180 ₽ + IPv4 200 ₽). Пообещал владельцу порог — проверить и удалить, если выше.
+8. **POST создания сервера не повторять вслепую:** через прокси сессии он рвётся (`curl: (35) reset`) и может уже
+   выполниться. Один запрос без `--retry`, затем `GET /servers` по имени.
+9. **Код больше лимита cloud-init (~64 КБ)** — не урезать проект: в cloud-init положить одноразовый HTTP-приёмник на
+   порт 80 с токеном, скрипт создания шлёт архив POST-ом (из сессии 80/443 наружу открыты). Пример — репо
+   `adriaaante/crm_stomatology`, `deploy/timeweb/receive.py` + `create-server.sh`.
+10. **Проверка готовности внутри контейнера — не HTTP на localhost**, если у приложения строгий список хостов
+    (Django ALLOWED_HOSTS): получит 400, цикл ожидания зависнет навсегда. Проверять командой приложения.
+11. Домен, купленный в панели timeweb.cloud, сразу делегирован на ns1/ns2.timeweb.ru — записи через API v2, а
+    поддомен сначала создать: `POST /api/v1/domains/{fqdn}/subdomains/{sub}`, потом `POST /api/v2/domains/{sub.fqdn}/dns-records`.
+    Регистрация .ru через API требует `person_id` (администратор с паспортом) — проще, чтобы владелец купил в панели.
+
 ## Внутри сервера
 - Docker — из apt Ubuntu (`docker.io docker-compose-v2`, зеркало `mirror.timeweb.ru` быстрое), Docker Hub — через
   `{"registry-mirrors":["https://dockerhub.timeweb.cloud"]}` в `/etc/docker/daemon.json`.

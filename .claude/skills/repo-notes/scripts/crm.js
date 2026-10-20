@@ -68,8 +68,10 @@ function readLog(text, prefix) {
     const status = col(/статус/).toLowerCase();
     let type = sec[1];
     if (type === 'act' && /соглашени/i.test(cell + ' ' + basis + ' ' + col(/сумм/))) type = 'addendum';
+    const paid = /оплачен/.test(status) && !/не\s*оплачен|ждём|ждем/.test(status);
+    // дата оплаты — из статуса («оплачен 20.10.2026»), как в «Обновить из Git» CRM; без даты — дата документа
     rows.push({ type, number, date: toIso(col(/дата/)), sum: col(/сумм|цена/), basis, status,
-      paid: /оплачен/.test(status) && !/не\s*оплачен|ждём|ждем/.test(status), cancelled: /отмен|аннулир/.test(status) });
+      paid, paid_date: paid ? toIso(status) : null, cancelled: /отмен|аннулир/.test(status) });
   }
   return rows;
 }
@@ -103,7 +105,7 @@ async function push(repo, d) {
   fd.set('note', 'из реестра проекта (finance-log)');
   for (const k of ['docx', 'pdf']) if (f[k]) fd.set(k, new Blob([fs.readFileSync(f[k])]), path.basename(f[k]).normalize('NFC'));
   const r = await api('POST', '/ext/v1/documents', fd);
-  if (d.type === 'invoice' && d.paid) await api('POST', '/ext/v1/invoices/paid', { repo, number: d.number, date: d.date, note: 'оплачен по реестру проекта' });
+  if (d.type === 'invoice' && d.paid) await api('POST', '/ext/v1/invoices/paid', { repo, number: d.number, date: d.paid_date || d.date, note: 'оплачен по реестру проекта' });
   return { ...r, files: [f.docx, f.pdf].filter(Boolean).length };
 }
 

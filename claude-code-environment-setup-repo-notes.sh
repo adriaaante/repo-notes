@@ -123,6 +123,20 @@ description: "Единый скилл Adrian / FutureFlow для ЛЮБОГО р
 
 ---
 
+### I. Сайты: защита от копирования ИИ-ботами (правило Adrian 21.10.2026, для всех сайтов — наших и клиентских)
+
+Любой сайт, который делаем или выкатываем, закрываем от сбора в датасеты, но не от поиска:
+- `robots.txt`: отдельная группа `Disallow: /` для краулеров обучения — GPTBot, ClaudeBot, anthropic-ai, CCBot,
+  Google-Extended, Applebot-Extended, Bytespider, Amazonbot, meta-externalagent, cohere-ai, Diffbot (ИИ-поиск — OAI-SearchBot, PerplexityBot — сюда не включать).
+- Сервер отвечает **403 по User-Agent** (robots — лишь просьба): Apache — `mod_rewrite` в `.htaccess` внутри `<IfModule>`,
+  nginx — `map $http_user_agent`. Те же краулеры + программы «скачать сайт» (HTTrack, WebCopier, Offline Explorer, Scrapy).
+  `robots.txt` отдавать всем. Закрытые разделы с файлами (носители, стикеры, выгрузки) — ещё и ИИ-ассистентам
+  (ChatGPT-User, Claude-User, Perplexity-User…) и скриптовым клиентам (python-requests, Wget, Go-http-client).
+- НЕ трогать поисковых роботов (YandexBot, Googlebot, Bingbot), превью ссылок (TelegramBot, facebookexternalhit, WhatsApp)
+  и ИИ-поиск на основном сайте (OAI-SearchBot, ChatGPT-User, PerplexityBot, YandexAdditional) — оттуда приходят клиенты.
+- Проверять перед выкаткой: `curl -A '<UA>'` — браузер/YandexBot 200, GPTBot 403, `/robots.txt` 200. Образец —
+  `futureflow-site` (`.htaccess`, `robots.txt`). Человека с браузером это не остановит: защищаем от массового сбора.
+
 ## Часть 2. Память проекта — что писать в CLAUDE.md этого репо
 
 Пиши **ключевое и неочевидное** — то, что даёт ориентацию и экономит время в

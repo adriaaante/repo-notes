@@ -123,21 +123,6 @@ description: "Единый скилл Adrian / FutureFlow для ЛЮБОГО р
 
 ---
 
-### I. Сайты: защита от копирования ботами — без вреда SEO и выдаче в ИИ (правило Adrian 21.10.2026, все сайты)
-
-Главное — не потерять выдачу: при любом риске для SEO или ответов ИИ правило не применять.
-- **Никогда не закрывать** поисковиков (YandexBot, Googlebot, Bingbot), ИИ-ботов — ни поисковых (OAI-SearchBot,
-  PerplexityBot, Claude-SearchBot, YandexAdditional), ни обучающих (GPTBot, ClaudeBot, CCBot, Google-Extended): через них
-  сайт попадает в ответы и знания моделей. И превью ссылок (TelegramBot, facebookexternalhit, WhatsApp).
-- **На всём сайте 403 по User-Agent** (robots — лишь просьба) только тем, кто выдачи не даёт: программы «скачать сайт»
-  (HTTrack, WebCopier, Offline Explorer, SiteSucker…) и сборщики датасетов без поиска (img2dataset, Omgili, Timpibot,
-  ImagesiftBot, PanguBot). Apache — `mod_rewrite` в `.htaccess` внутри `<IfModule>`, nginx — `map $http_user_agent`.
-  `robots.txt` отдавать всем.
-- **Скрытые разделы с файлами** (носители, стикеры, выгрузки — те, что и так `Disallow` + `noindex`) — 403 всем ИИ-ботам и
-  скриптовым клиентам (python-requests, Wget, Go-http-client…): выдачи там нет, терять нечего.
-- Проверка перед выкаткой: `curl -A '<UA>'` — браузер, YandexBot, GPTBot 200 на страницах; HTTrack 403; `/robots.txt` 200.
-  Образец — `futureflow-site` (`.htaccess`, `robots.txt`). Человека с браузером это не остановит: защита от массового сбора.
-
 ## Часть 2. Память проекта — что писать в CLAUDE.md этого репо
 
 Пиши **ключевое и неочевидное** — то, что даёт ориентацию и экономит время в

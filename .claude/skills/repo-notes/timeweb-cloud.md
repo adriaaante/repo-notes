@@ -15,7 +15,7 @@
   1000 ₽/мес; публичный IPv4 — отдельно; автобэкапы ~6 ₽/ГБ. Ubuntu 24.04 = `os_id 99`. Список: `GET /presets/servers`.
 
 ## Принятая архитектура (решение пользователя)
-- Один VPS «main» (id 9270333, IP 5.42.96.9) под все проекты; отдельного infra-репо НЕТ — серверное в `deploy/` проекта.
+- VPS «tvoj-drug» (id 9270333, IP 5.42.96.9; до 27.10.2026 — «main») — сервер «Твоего друга», Пуговка на нём гостем; отдельного infra-репо НЕТ — серверное в `deploy/` проекта.
 - Общий Caddy = caddy-docker-proxy в `/srv/caddy`, docker-сеть `caddy`; каждый проект в `/srv/<проект>/` со своим
   `docker-compose.yml` (labels `caddy: <домен>`, `caddy.reverse_proxy: "{{upstreams <порт>}}"`), `.env`, `data/`.
 - Пользователь `deploy` (в группе docker) с SSH-ключом — для деплоя из GitHub Actions.

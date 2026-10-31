@@ -6,5 +6,6 @@
   "ДС-": {"client": "ООО «УНМЕДИКЛ»", "project": "dentalstr25.ru (стоматология Dental Str.25)", "since": "2026-09-30", "note": "своя серия с 001, договор ДС-001, счёт ДС-002"},
   "ВГ-": {"client": "ИП Березина С. В.", "project": "vagner-ds.ru (Школа танцев Ирины Вагнер)", "since": "2026-10-01", "note": "своя серия с 001, договор ВГ-001, счёт ВГ-002"},
   "СГ-": {"client": "ООО «РЕСТЕЙТ»", "project": "Сити Групп / Сити Склад (avito.ru/brands/citysklad24, citysklad24.ru; репо adriaaante/CityGroup_arenda)", "since": "2026-10-10", "note": "своя серия с 001, договор СГ-001"},
-  "АК-": {"client": "ООО «АльфаСпа Косметик»", "project": "alfabeauty.ru, alfabeautyclub.ru (группа AlfaSPA; репо adriaaante/alfabeauty---cosmetic)", "since": "2026-10-16", "note": "своя серия с 001, договор АК-001"}
+  "АК-": {"client": "ООО «АльфаСпа Косметик»", "project": "alfabeauty.ru, alfabeautyclub.ru (группа AlfaSPA; репо adriaaante/alfabeauty---cosmetic)", "since": "2026-10-16", "note": "своя серия с 001, договор АК-001"},
+  "ЗВ-": {"client": "АО «ЗВИ»", "project": "zvipadel.ru (падел-клуб «ЗВИ Падел», м. Павелецкая)", "since": "2026-10-31", "note": "своя серия с 001, договор ЗВ-001 (проект, отправлен с КП)"}
 }

@@ -5,7 +5,7 @@
 скрипт окружения облачных сессий, который его ставит. Отдельного скилла `futureflow` больше нет (29.09.2026 слит сюда).
 
 ## Структура проекта
-- `.claude/skills/repo-notes/SKILL.md` — текст скилла (Части 1–3); `assets/`, `docs/`, `templates/`, `scripts/` — его файлы.
+- `.claude/skills/repo-notes/SKILL.md` — текст скилла (Части 1–4); `assets/`, `docs/`, `templates/`, `scripts/`, `yandex/` (образец генератора набора для Яндекс Бизнеса, копия из futureflow-site `deploy/yandex/`) — его файлы.
 - `claude-code-environment-setup-repo-notes.sh`, `repo-notes-skill.zip` — **генерируются**, руками не править.
 
 ## Деплой

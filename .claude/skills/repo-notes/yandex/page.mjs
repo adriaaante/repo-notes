@@ -211,7 +211,7 @@ ${sec('review', '09', 'Отзывы: ссылка и QR-код', 'Ссылка �
 <script>
 (function(){
   var toast=document.getElementById('toast'),tm;
-  function say(t){toast.textContent=t;toast.classList.add('on');clearTimeout(tm);tm=setTimeout(function(){toast.classList.remove('on')},1400)}
+  function say(t,ms){toast.textContent=t;toast.classList.add('on');clearTimeout(tm);tm=setTimeout(function(){toast.classList.remove('on')},ms||1400)}
   function put(text,btn){
     function ok(){say('Скопировано');if(btn){var o=btn.textContent;btn.classList.add('ok');btn.textContent='Готово';setTimeout(function(){btn.classList.remove('ok');btn.textContent=o},1200)}}
     if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(text).then(ok,fb)}else fb();
@@ -225,10 +225,12 @@ ${sec('review', '09', 'Отзывы: ссылка и QR-код', 'Ссылка �
   function getBlob(href){return location.protocol==='file:'?viaScript(href):fetch(href).then(function(r){if(!r.ok)throw 0;return r.blob()}).catch(function(){return viaScript(href)})}
   function save(href){var name=href.split('/').pop();
     return getBlob(href).then(function(bl){give(bl,name)},function(){window.open(href,'_blank');say('Сохраните файл: правый клик → «Сохранить как»')})}
-  // «Скачать все» — прямые ссылки по одному с паузой (так работает у Adrian; выбор папки и ZIP не нужны). Порядок — как
-  // в списке: истории идут с последнего слайда. Браузер может спросить «скачать несколько файлов» — «Разрешить».
-  function saveAll(list){var i=0;(function next(){if(i>=list.length)return;var a=document.createElement('a');a.href=list[i++];a.download='';
-    a.setAttribute('data-raw','');document.body.appendChild(a);a.click();a.remove();setTimeout(next,350)})();say('Скачиваю '+list.length+' файлов')}
+  // «Скачать все» — каждый файл отдельно, по очереди (истории — с последнего слайда). Через blob, как «Скачать»: прямая
+  // ссылка со страницы, открытой с диска, ОТКРЫВАЕТ картинку вместо скачивания. Chrome без разрешения пропускает
+  // все скачивания после первого — один раз «Разрешить» скачивание нескольких файлов (значок в адресной строке).
+  async function saveAll(list){say('Скачиваю '+list.length+' файлов…',4000);
+    for(var i=0;i<list.length;i++){try{give(await getBlob(list[i]),list[i].split('/').pop())}catch(er){}await new Promise(function(r){setTimeout(r,500)})}
+    say('Скачано '+list.length+'. Если пришёл один файл — нажмите значок блокировки справа в адресной строке → «Всегда разрешать» → и ещё раз «Скачать все»',12000)}
   document.addEventListener('click',function(e){
     var b=e.target.closest('[data-copy]');if(b){put(b.closest('.cp').querySelector('.cp-t').textContent,b);return}
     b=e.target.closest('[data-copy-v]');if(b){put(b.getAttribute('data-copy-v'),b);return}

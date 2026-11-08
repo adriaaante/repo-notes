@@ -143,8 +143,9 @@ function tplPromo(p) {
   return doc(1800, 960, `
   <div class="bg" style="background-image:url(${BG(p.bg)});background-position:80% 50%"></div>
   <div class="shade" style="background:linear-gradient(90deg,rgba(7,10,18,.95) 0%,rgba(7,10,18,.75) 40%,rgba(7,10,18,0) 72%)"></div>
-  <div style="position:absolute;left:110px;top:0;bottom:0;display:flex;flex-direction:column;justify-content:center;width:1000px">
-    <div class="pill" style="align-self:flex-start;height:76px;padding:0 38px;font-size:32px;margin-bottom:46px">${esc(p.badge)}</div>
+  <div style="position:absolute;left:110px;top:60px">${logo(88)}</div>
+  <div style="position:absolute;left:110px;top:170px;bottom:0;display:flex;flex-direction:column;justify-content:center;width:1000px">
+    <div class="pill" style="align-self:flex-start;height:70px;padding:0 34px;font-size:30px;margin-bottom:36px">${esc(p.badge)}</div>
     <div class="t" style="font-size:${fit(p.head, 960, 108)}px;margin-bottom:34px">${title(p.head)}</div>
     <div class="s" style="font-size:34px;max-width:820px">${esc(p.text)}</div>
   </div>

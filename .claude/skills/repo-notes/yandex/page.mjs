@@ -222,18 +222,28 @@ ${sec('review', '09', 'Отзывы: ссылка и QR-код', 'Ссылка �
   function give(blob,name){var u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;a.setAttribute('data-raw','');document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(u)},4000)}
   var wait={};window.__dlPut=function(rel,type,b64){var bin=atob(b64),n=bin.length,u=new Uint8Array(n);while(n--)u[n]=bin.charCodeAt(n);var w=wait[rel];delete wait[rel];if(w)w(new Blob([u],{type:type}))};
   function viaScript(href){var rel=href.indexOf('files/')===0?href.slice(6):href;return new Promise(function(ok,no){wait[rel]=ok;var sc=document.createElement('script');sc.src='files/.dl/'+rel+'.js';sc.onload=function(){sc.remove()};sc.onerror=function(){delete wait[rel];sc.remove();no()};document.head.appendChild(sc)})}
+  function getBlob(href){return location.protocol==='file:'?viaScript(href):fetch(href).then(function(r){if(!r.ok)throw 0;return r.blob()}).catch(function(){return viaScript(href)})}
   function save(href){var name=href.split('/').pop();
-    var p=location.protocol==='file:'?viaScript(href):fetch(href).then(function(r){if(!r.ok)throw 0;return r.blob()}).catch(function(){return viaScript(href)});
-    return p.then(function(bl){give(bl,name)},function(){window.open(href,'_blank');say('Сохраните файл: правый клик → «Сохранить как»')})}
+    return getBlob(href).then(function(bl){give(bl,name)},function(){window.open(href,'_blank');say('Сохраните файл: правый клик → «Сохранить как»')})}
+  // «Скачать все» — отдельными файлами, в порядке списка (истории — с последнего слайда). Браузер без спроса пропускает
+  // только ПЕРВОЕ автоматическое скачивание, поэтому в Chrome/Edge — выбор папки один раз, и все файлы пишутся в неё;
+  // в остальных браузерах — по одному с паузой (браузер спросит «скачать несколько файлов» — «Разрешить»).
+  function fname(h){var p=h.split('/'),n=p.pop();return /^[0-9]+[.]/.test(n)?p.pop()+'-'+n:n}
+  async function saveAll(list){
+    var dir=null;
+    if(window.showDirectoryPicker){try{dir=await window.showDirectoryPicker({mode:'readwrite',id:'yandex-kit'})}catch(er){if(er&&er.name==='AbortError')return;dir=null}}
+    say('Скачиваю '+list.length+' файлов…');
+    try{
+      for(var i=0;i<list.length;i++){var bl=await getBlob(list[i]),n=fname(list[i]);
+        if(dir){var fh=await dir.getFileHandle(n,{create:true});var w=await fh.createWritable();await w.write(bl);await w.close()}
+        else{give(bl,n);await new Promise(function(r){setTimeout(r,600)})}}
+      say(dir?'Сохранено в папку: '+list.length+' файлов':'Если скачался один файл — разрешите сайту скачивать несколько файлов (значок в адресной строке)');
+    }catch(er){say('Не удалось скачать — скачайте по одному')}
+  }
   document.addEventListener('click',function(e){
     var b=e.target.closest('[data-copy]');if(b){put(b.closest('.cp').querySelector('.cp-t').textContent,b);return}
     b=e.target.closest('[data-copy-v]');if(b){put(b.getAttribute('data-copy-v'),b);return}
-    b=e.target.closest('[data-all]');if(b){
-      // по одному: браузер спросит «разрешить скачивание нескольких файлов» — ответить «Разрешить»
-      var list=JSON.parse(b.getAttribute('data-all')),i=0;
-      (function next(){if(i>=list.length)return;save(list[i++]).then(function(){setTimeout(next,300)})})();
-      say('Скачиваю '+list.length+' файлов');return;
-    }
+    b=e.target.closest('[data-all]');if(b){saveAll(JSON.parse(b.getAttribute('data-all')));return}
     b=e.target.closest('a[download]:not([data-raw])');if(b){e.preventDefault();save(b.getAttribute('href'));}
   });
 })();

@@ -175,7 +175,7 @@ ${sec('price', '04', 'Товары и услуги', 'Прайс: для каж�
 
 ${sec('stories', '05', 'Истории', 'Кнопка «Создать историю»: название до 15 знаков, слайды 1280×1920 по порядку, на последнем — кнопка со ссылкой. Обложкой сделайте первый слайд.',
   M.stories.map(s => { const st = K.STORIES.find(x => x.id === s.id); return `<div class="story"><div class="story-h"><h3>${esc(s.name)}</h3>
-    <button class="b sm g" type="button" data-copy-v="${esc(s.name)}">Копировать название</button>${all(s.files)}</div>
+    <button class="b sm g" type="button" data-copy-v="${esc(s.name)}">Копировать название</button>${all([...s.files].reverse())}</div>
     <div class="reel">${s.files.map((file, i) => card({ file, w: 1280, h: 1920, label: 'Слайд ' + (i + 1) + (i === s.files.length - 1 ? ' · кнопка' : '') }, '', i === s.files.length - 1)).join('')}</div>
     <div class="btnp"><div class="btnp-h"><span class="btnp-n">${s.files.length}</span><div><b>Кнопка на последнем слайде</b>
       <span>В «Слайдах» выделите слайд ${s.files.length} → «Кнопка» → вставьте текст и ссылку</span></div></div>
@@ -217,21 +217,39 @@ ${sec('review', '09', 'Отзывы: ссылка и QR-код', 'Ссылка �
     if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(text).then(ok,fb)}else fb();
     function fb(){var t=document.createElement('textarea');t.value=text;t.style.position='fixed';t.style.opacity='0';document.body.appendChild(t);t.select();try{document.execCommand('copy');ok()}catch(e){say('Выделите текст вручную')}t.remove()}
   }
+  // Скачать = сразу файл, а не открыть картинку. Атрибут download браузер игнорирует, если страница открыта с диска
+  // (file://) — поэтому: по http — fetch → blob; с диска — files/.dl/<путь>.js (base64, пишет page.mjs) → blob.
+  function give(blob,name){var u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;a.setAttribute('data-raw','');document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(u)},4000)}
+  var wait={};window.__dlPut=function(rel,type,b64){var bin=atob(b64),n=bin.length,u=new Uint8Array(n);while(n--)u[n]=bin.charCodeAt(n);var w=wait[rel];delete wait[rel];if(w)w(new Blob([u],{type:type}))};
+  function viaScript(href){var rel=href.indexOf('files/')===0?href.slice(6):href;return new Promise(function(ok,no){wait[rel]=ok;var sc=document.createElement('script');sc.src='files/.dl/'+rel+'.js';sc.onload=function(){sc.remove()};sc.onerror=function(){delete wait[rel];sc.remove();no()};document.head.appendChild(sc)})}
+  function save(href){var name=href.split('/').pop();
+    var p=location.protocol==='file:'?viaScript(href):fetch(href).then(function(r){if(!r.ok)throw 0;return r.blob()}).catch(function(){return viaScript(href)});
+    return p.then(function(bl){give(bl,name)},function(){window.open(href,'_blank');say('Сохраните файл: правый клик → «Сохранить как»')})}
   document.addEventListener('click',function(e){
     var b=e.target.closest('[data-copy]');if(b){put(b.closest('.cp').querySelector('.cp-t').textContent,b);return}
     b=e.target.closest('[data-copy-v]');if(b){put(b.getAttribute('data-copy-v'),b);return}
     b=e.target.closest('[data-all]');if(b){
-      // по одному с паузой: браузер спросит «разрешить скачивание нескольких файлов» — ответить «Разрешить»
+      // по одному: браузер спросит «разрешить скачивание нескольких файлов» — ответить «Разрешить»
       var list=JSON.parse(b.getAttribute('data-all')),i=0;
-      (function next(){if(i>=list.length)return;var a=document.createElement('a');a.href=list[i];a.download='';document.body.appendChild(a);a.click();a.remove();i++;setTimeout(next,350)})();
-      say('Скачиваю '+list.length+' файлов');
+      (function next(){if(i>=list.length)return;save(list[i++]).then(function(){setTimeout(next,300)})})();
+      say('Скачиваю '+list.length+' файлов');return;
     }
+    b=e.target.closest('a[download]:not([data-raw])');if(b){e.preventDefault();save(b.getAttribute('href'));}
   });
 })();
 </script>
 </body>
 </html>
 `;
+  // base64-копии для кнопок «Скачать» при открытии страницы с диска (см. save() в скрипте страницы)
+  const FILES = path.join(ROOT, 'merch/yandex/files'), DL = path.join(FILES, '.dl');
+  const TYPES = { jpg: 'image/jpeg', png: 'image/png', svg: 'image/svg+xml', mp4: 'video/mp4', yml: 'application/xml', xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', pdf: 'application/pdf' };
+  fs.rmSync(DL, { recursive: true, force: true });
+  for (const rel of fs.readdirSync(FILES, { recursive: true })) {
+    const ext = rel.split('.').pop(); if (!TYPES[ext] || rel.startsWith('.dl')) continue;
+    const out = path.join(DL, rel + '.js'); fs.mkdirSync(path.dirname(out), { recursive: true });
+    fs.writeFileSync(out, `__dlPut(${JSON.stringify(rel.split(path.sep).join('/'))},"${TYPES[ext]}","${fs.readFileSync(path.join(FILES, rel)).toString('base64')}")`);
+  }
   fs.writeFileSync(path.join(ROOT, 'merch/yandex/index.html'), html);
   console.log('страница: merch/yandex/index.html');
 }
